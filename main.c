@@ -12,10 +12,12 @@ const char *vertexShaderSource = "#version 460 core\n"
     "layout (location = 0) in vec3 aPos;\n"
     "layout (location = 1) in vec3 aColor;\n"
     "out vec3 color;\n"
-    "uniform mat4 transform;\n"
+    "uniform mat4 model;\n"
+    "uniform mat4 view;\n"
+    "uniform mat4 projection;\n"
     "void main()\n"
     "{\n"
-    "gl_Position = transform * vec4(aPos, 1.0f);\n"
+    "gl_Position = projection * view * model * vec4(aPos, 1.0f);\n"
     "color = aColor;\n"
     "}\n\0";
 // in: VBO -> aPos
@@ -34,12 +36,15 @@ typedef struct block{
     char ascii;
 }block;
 
-#define BLOCKS_NUM 5
+#define BLOCKS_NUM 8
 const block blocks[BLOCKS_NUM] = {{{255,255,255,255}, '#'},
                                   {{0,0,0,255}, ' '},
                                   {{255,0,255,255}, '`'},
                                   {{255,255,0,255}, '.'},
                                   {{0,255,255,255}, '@'},
+                                  {{255,0,0,255}, '+'},
+                                  {{0,255,0,255}, '&'},
+                                  {{1.0,255,255}, '!'},
                                   };
 void print_block(unsigned char * pixels){
     char color[4];
@@ -47,7 +52,7 @@ void print_block(unsigned char * pixels){
     for( int i = 0; i < BLOCKS_NUM; i++){
         if (color[0] == blocks[i].color[0] && color[1] == blocks[i].color[1] && color[2] == blocks[i].color[2]){
             printf("%c", blocks[i].ascii);
-//          printf("\033[1;48;2;%d;%d;%dm%c\033[0m", 255, 255, 255, '#');
+            //printf("\033[1;48;2;%d;%d;%dm%c\033[0m", 255, 255, 255, '#');
         }
     }
 }
@@ -69,7 +74,7 @@ int main(int argc, char * argv[]){
     //??????????
 
     //My screen: 2560x1600 1000x1000 is a test
-    int fb_width = 300, fb_height =70;
+    int fb_width = 300, fb_height =71;
     GLFWwindow * window = glfwCreateWindow(fb_width, fb_height, "Game Window", NULL,NULL);
     if (window == NULL){
         printf("Failed to create a window\n");
@@ -88,42 +93,84 @@ int main(int argc, char * argv[]){
     else{
         printf("GLAD initialized\n");
     }
-    /*
-    int num = rand()%100000;
-    float * vertices = calloc(num, sizeof(float));
-    for(int i = 0; i < num; i++){
-        float a = ((float)rand() + 13)/171717;
-        vertices[i] = (a - floor(a))*pow(-1, rand()%10);
-    }
-    */
+
+    //float vertices[] = {
+    //    //coordinates           //color
+    //    0.0f, 1.0f, 0.0f,       1.0f, 1.0f, 0.0f,
+    //    -1.0f,-1.0f, 0.0f,       1.0f, 1.0f, 0.0f,
+    //    1.0f, 1.0f, 0.0f,       1.0f, 1.0f, 0.0f,
+//
+    //    0.5f, -1.0f, 0.0f,       1.0f, 0.0f, 1.0f,
+    //    1.0f, -1.0f, 0.0f,       1.0f, 0.0f, 1.0f,
+    //    0.3f, 1.0f, 0.0f,       1.0f, 0.0f, 1.0f,
+//
+    //    -0.2f, -1.0f, 0.0f,       0.0f, 1.0f, 1.0f,
+    //    -0.9f, -0.4f, 0.0f,       0.0f, 1.0f, 1.0f,
+    //    1.0f, 0.0f, 0.0f,       0.0f, 1.0f, 1.0f,
+    //};
     float vertices[] = {
         //coordinates           //color
-        0.0f, 1.0f, 0.0f,       1.0f, 1.0f, 0.0f,
-        -1.0f,-1.0f, 0.0f,       1.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,       1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
+        -1.0f,1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
+        -1.0f, -1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
 
-        0.5f, -1.0f, 0.0f,       1.0f, 0.0f, 1.0f,
-        1.0f, -1.0f, 0.0f,       1.0f, 0.0f, 1.0f,
-        0.3f, 1.0f, 0.0f,       1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 0.0f,
+        1.0f,-1.0f, 1.0f,       1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,       1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, -1.0f,       1.0f, 1.0f, 0.0f,
 
-        -0.2f, -1.0f, 0.0f,       0.0f, 1.0f, 1.0f,
-        -0.9f, -0.4f, 0.0f,       0.0f, 1.0f, 1.0f,
-        1.0f, 0.0f, 0.0f,       0.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 1.0f,
+        -1.0f,1.0f, 1.0f,       1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,
+
+        1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 0.0f,
+        -1.0f,1.0f, -1.0f,       1.0f, 0.0f, 0.0f,
+        1.0f, -1.0f, -1.0f,       1.0f, 0.0f, 0.0f,
+        -1.0f, -1.0f, -1.0f,       1.0f, 0.0f, 0.0f,
+
+        -1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,       0.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, -1.0f,       0.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, -1.0f,       0.0f, 1.0f, 0.0f,
+
+        1.0f, -1.0f, 1.0f,       0.0f, 0.0f, 1.0f,
+        -1.0f,-1.0f, 1.0f,       0.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, -1.0f,       0.0f, 0.0f, 1.0f,
+        -1.0f,-1.0f, -1.0f,        0.0,  0.0f, 1.0f,
+
     };
     unsigned int indices[] = {
         0, 1, 2,
-        0, 2, 3,
+        1, 2, 3,
+
+        4, 5, 6,
+        5, 6, 7,
+
+        8, 9, 10,
+        9, 10, 11,
+
+        12, 13, 14,
+        13, 14, 15,
+
+        16, 17, 18,
+        17, 18, 19,
+
+        20, 21, 22,
+        21, 22, 23,
+
     };
     //configuration VBO
     unsigned int VBO, VAO, EBO;
     glGenBuffers(1, &VBO);
     glGenVertexArrays(1, &VAO);
-    //glGenBuffers(1, &EBO);
+    glGenBuffers(1, &EBO);
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     //set pointers
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -161,51 +208,58 @@ int main(int argc, char * argv[]){
     //glfwGetFramebufferSize(window, &fb_width, &fb_height);
     size_t pixel_count = fb_width * fb_height;
     size_t data_size = pixel_count * 4;
-    printf("%d %d|||",  fb_width ,fb_height);
+
     unsigned char* pixels = (unsigned char*)calloc(data_size, sizeof(char));
     while(!glfwWindowShouldClose(window))
     {
         global_time1 = glfwGetTime();
         processInput(window);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //////////////////////////////////////////////////////////////////////
         glUseProgram(shaderProgram);
 
         float time = glfwGetTime();
+        mat4 model = GLM_MAT4_IDENTITY_INIT;
 
-        mat4 TRS_matrix = {{0.5f, 0.0f, 0.0f, 0.0f},
-                           {0.0f, 0.5f, 0.0f, 0.0f},
-                           {0.0f, 0.0f, 0.5f, 0.0f},
-                           {0.0f, 0.0f, 0.0f, 1.0f}};
-        vec3 axis = {0,0,1};
+        glm_translate(model, (vec3){0.0f, 0.0f, -20.0f});
+        glm_rotate(model, time, (vec3){1.0f,1.0f,1.0f});
 
-        glm_rotate(TRS_matrix, time, axis);
-        unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, *TRS_matrix);
+
+        unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (float*)model);
+        mat4 view = GLM_MAT4_IDENTITY_INIT;
+        glm_translate(view, (vec3){0.0f,0.0f,0.0f});
+        unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
+        mat4 projection = {1.0f};
+        glm_perspective(glm_rad(20.0f), 200.0f / 71.0f, 0.1f, 100.0f, projection);
+        unsigned int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (float*)projection);
+
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 9);
+        //glDrawArrays(GL_TRIANGLES, 0, 9);
+        glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(indices[0]), GL_UNSIGNED_INT, 0);
         glPixelStorei(GL_PACK_ALIGNMENT, 1);//???
 
-        glReadBuffer(GL_BACK);//
+        glReadBuffer(GL_BACK);
 
         glReadPixels(0, 0, fb_width, fb_height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-        for(int i = 0; i <= pixel_count*4; i+=4) {
+        for(int i = 0; i < pixel_count*4; i+=4) {
             print_block(pixels + i);
             if (i%(fb_width*4) == 0) {
                 printf("\n");
             }
         }
-        //printf("\033c");
+        printf("\033c");
 
 //////////////////////////////////////////////////////////////////////
-        //glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(indices[0]), GL_UNSIGNED_INT, 0);
         glfwSwapBuffers(window);
         glfwPollEvents();
         i++;
         if (global_time1 - global_time2 > 1){
             global_time2 = global_time1;
-            //printf("\nFPS: %d\n", i);
             FPS = i;
             i = 0;
         }

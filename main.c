@@ -40,11 +40,11 @@ typedef struct block{
 const block blocks[BLOCKS_NUM] = {{{255,255,255,255}, '#'},
                                   {{0,0,0,255}, ' '},
                                   {{255,0,255,255}, '`'},
-                                  {{255,255,0,255}, '.'},
+                                  {{255,255,0,255}, '-'},
                                   {{0,255,255,255}, '@'},
                                   {{255,0,0,255}, '+'},
                                   {{0,255,0,255}, '&'},
-                                  {{1.0,255,255}, '!'},
+                                  {{0,0,255}, '!'},
                                   };
 void print_block(unsigned char * pixels){
     char color[4];
@@ -210,6 +210,9 @@ int main(int argc, char * argv[]){
     size_t data_size = pixel_count * 4;
 
     unsigned char* pixels = (unsigned char*)calloc(data_size, sizeof(char));
+    unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
+    unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
+    unsigned int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
     while(!glfwWindowShouldClose(window))
     {
         global_time1 = glfwGetTime();
@@ -227,19 +230,16 @@ int main(int argc, char * argv[]){
         glm_rotate(model, time, (vec3){1.0f,1.0f,1.0f});
 
 
-        unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
+
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (float*)model);
         mat4 view = GLM_MAT4_IDENTITY_INIT;
         glm_translate(view, (vec3){0.0f,0.0f,0.0f});
-        unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
         mat4 projection = {1.0f};
         glm_perspective(glm_rad(20.0f), 200.0f / 71.0f, 0.1f, 100.0f, projection);
-        unsigned int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (float*)projection);
 
         glBindVertexArray(VAO);
-        //glDrawArrays(GL_TRIANGLES, 0, 9);
         glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(indices[0]), GL_UNSIGNED_INT, 0);
         glPixelStorei(GL_PACK_ALIGNMENT, 1);//???
 

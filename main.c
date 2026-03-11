@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <math.h>
-
+#include <unistd.h>
 #include "main.h"
 #include <cglm/cglm.h>
 #include <time.h>
@@ -11,12 +11,16 @@
 const char *vertexShaderSource = "#version 460 core\n"
     "layout (location = 0) in vec3 aPos;\n"
     "layout (location = 1) in vec3 aColor;\n"
+    "layout (location = 2) in vec4 aInstanceCol0;\n"
+    "layout (location = 3) in vec4 aInstanceCol1;\n"
+    "layout (location = 4) in vec4 aInstanceCol2;\n"
+    "layout (location = 5) in vec4 aInstanceCol3;\n"
     "out vec3 color;\n"
-    "uniform mat4 model;\n"
     "uniform mat4 view;\n"
     "uniform mat4 projection;\n"
     "void main()\n"
     "{\n"
+    "mat4 model = mat4(aInstanceCol0, aInstanceCol1, aInstanceCol2, aInstanceCol3);\n"
     "gl_Position = projection * view * model * vec4(aPos, 1.0f);\n"
     "color = aColor;\n"
     "}\n\0";
@@ -46,12 +50,14 @@ const block blocks[BLOCKS_NUM] = {{{255,255,255,255}, '#'},
                                   {{0,255,0,255}, '&'},
                                   {{0,0,255}, '!'},
                                   };
-void print_block(unsigned char * pixels){
+void print_block(unsigned char * pixels, char * buffer, int * ic){
     char color[4];
     for( int i = 0; i < 4; i++) color[i] = pixels[i];
     for( int i = 0; i < BLOCKS_NUM; i++){
         if (color[0] == blocks[i].color[0] && color[1] == blocks[i].color[1] && color[2] == blocks[i].color[2]){
-            printf("%c", blocks[i].ascii);
+            buffer[*ic] = blocks[i].ascii;
+            (*ic)+=1;
+            //printf("%c", blocks[i].ascii);
             //printf("\033[1;48;2;%d;%d;%dm%c\033[0m", 255, 255, 255, '#');
         }
     }
@@ -60,8 +66,6 @@ void print_block(unsigned char * pixels){
 int main(int argc, char * argv[]){
     printf("Start %lg\n", 10.0f/((float)(rand()%10)));
 
-    //glxinfo | grep "OpenGL version"
-    //Current: OpenGL version string: 4.6 (Compatibility Profile) Mesa 25.3.3-arch1.1
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -74,7 +78,7 @@ int main(int argc, char * argv[]){
     //??????????
 
     //My screen: 2560x1600 1000x1000 is a test
-    int fb_width = 300, fb_height =71;
+    int fb_width = 381, fb_height =77;
     GLFWwindow * window = glfwCreateWindow(fb_width, fb_height, "Game Window", NULL,NULL);
     if (window == NULL){
         printf("Failed to create a window\n");
@@ -93,21 +97,7 @@ int main(int argc, char * argv[]){
     else{
         printf("GLAD initialized\n");
     }
-
-    //float vertices[] = {
-    //    //coordinates           //color
-    //    0.0f, 1.0f, 0.0f,       1.0f, 1.0f, 0.0f,
-    //    -1.0f,-1.0f, 0.0f,       1.0f, 1.0f, 0.0f,
-    //    1.0f, 1.0f, 0.0f,       1.0f, 1.0f, 0.0f,
-//
-    //    0.5f, -1.0f, 0.0f,       1.0f, 0.0f, 1.0f,
-    //    1.0f, -1.0f, 0.0f,       1.0f, 0.0f, 1.0f,
-    //    0.3f, 1.0f, 0.0f,       1.0f, 0.0f, 1.0f,
-//
-    //    -0.2f, -1.0f, 0.0f,       0.0f, 1.0f, 1.0f,
-    //    -0.9f, -0.4f, 0.0f,       0.0f, 1.0f, 1.0f,
-    //    1.0f, 0.0f, 0.0f,       0.0f, 1.0f, 1.0f,
-    //};
+    /*
     float vertices[] = {
         //coordinates           //color
         1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
@@ -140,7 +130,7 @@ int main(int argc, char * argv[]){
         1.0f, -1.0f, -1.0f,       0.0f, 0.0f, 1.0f,
         -1.0f,-1.0f, -1.0f,        0.0,  0.0f, 1.0f,
 
-    };
+        };
     unsigned int indices[] = {
         0, 1, 2,
         1, 2, 3,
@@ -161,16 +151,106 @@ int main(int argc, char * argv[]){
         21, 22, 23,
 
     };
+    */
+    float vertices[] = {
+        //coordinates           //color
+        1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
+        -1.0f,1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
+        -1.0f,1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
+        -1.0f, -1.0f, 1.0f,       0.0f, 1.0f, 1.0f,
+
+        1.0f, 1.0f, 1.0f,       1.0f, 1.0f, 0.0f,
+        1.0f,-1.0f, 1.0f,       1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,       1.0f, 1.0f, 0.0f,
+        1.0f,-1.0f, 1.0f,       1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,       1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, -1.0f,       1.0f, 1.0f, 0.0f,
+
+        1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 1.0f,
+        -1.0f,1.0f, 1.0f,       1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,
+        -1.0f,1.0f, 1.0f,       1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,
+
+        1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 0.0f,
+        -1.0f,1.0f, -1.0f,       1.0f, 0.0f, 0.0f,
+        1.0f, -1.0f, -1.0f,       1.0f, 0.0f, 0.0f,
+        -1.0f,1.0f, -1.0f,       1.0f, 0.0f, 0.0f,
+        1.0f, -1.0f, -1.0f,       1.0f, 0.0f, 0.0f,
+        -1.0f, -1.0f, -1.0f,       1.0f, 0.0f, 0.0f,
+
+        -1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,       0.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, -1.0f,       0.0f, 1.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,       0.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, -1.0f,       0.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, -1.0f,       0.0f, 1.0f, 0.0f,
+
+        1.0f, -1.0f, 1.0f,       0.0f, 0.0f, 1.0f,
+        -1.0f,-1.0f, 1.0f,       0.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, -1.0f,       0.0f, 0.0f, 1.0f,
+        -1.0f,-1.0f, 1.0f,       0.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, -1.0f,       0.0f, 0.0f, 1.0f,
+        -1.0f,-1.0f, -1.0f,        0.0,  0.0f, 1.0f,
+
+    };
     //configuration VBO
-    unsigned int VBO, VAO, EBO;
-    glGenBuffers(1, &VBO);
+    #define CUBES_PER_AXIS 41
+    #define TOTAL_CUBES (CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS)
+
+    mat4 * modelMatrices = malloc(TOTAL_CUBES * sizeof(mat4));
+    int idx = 0;
+    for (int k = 0; k < CUBES_PER_AXIS; k++) {
+        for (int j = 0; j < CUBES_PER_AXIS; j++) {
+            for (int i = 0; i < CUBES_PER_AXIS; i++) {
+                mat4 model = GLM_MAT4_IDENTITY_INIT;
+                if((k==(int)(CUBES_PER_AXIS/2) && k==i && k==j)){
+                    continue;
+                }
+                else{
+
+                    glm_translate(model, (vec3){
+                        (i - CUBES_PER_AXIS/2.0f) * 4.0f + (int)(CUBES_PER_AXIS/2),
+                        (j - CUBES_PER_AXIS/2.0f) * 4.0f + (int)(CUBES_PER_AXIS/2),
+                        (k - CUBES_PER_AXIS/2.0f) * 4.0f + (int)(CUBES_PER_AXIS/2)
+                    });
+                }
+
+                glm_mat4_copy(model, modelMatrices[idx]);
+                idx++;
+            }
+
+        }
+    }
+
+    unsigned int VBO, VAO, instanceVBO;
     glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &EBO);
     glBindVertexArray(VAO);
+
+    glGenBuffers(1, &instanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, TOTAL_CUBES * sizeof(mat4), modelMatrices, GL_STATIC_DRAW);
+
+
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
+    glEnableVertexAttribArray(2);
+    glVertexAttribDivisor(2, 1);
+    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(4 * sizeof(float)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribDivisor(3, 1);
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(8 * sizeof(float)));
+    glEnableVertexAttribArray(4);
+    glVertexAttribDivisor(4, 1);
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(12 * sizeof(float)));
+    glEnableVertexAttribArray(5);
+    glVertexAttribDivisor(5, 1);
+
+    glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     //set pointers
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -190,7 +270,6 @@ int main(int argc, char * argv[]){
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
 
-
     unsigned int shaderProgram;
     shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
@@ -205,7 +284,6 @@ int main(int argc, char * argv[]){
     int i = 0;
     printf("Start drawing\n");
     glfwMakeContextCurrent(window);
-    //glfwGetFramebufferSize(window, &fb_width, &fb_height);
     size_t pixel_count = fb_width * fb_height;
     size_t data_size = pixel_count * 4;
 
@@ -213,6 +291,8 @@ int main(int argc, char * argv[]){
     unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
     unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
     unsigned int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+    char * buffer = calloc(data_size, sizeof(char));
+    float time;
     while(!glfwWindowShouldClose(window))
     {
         global_time1 = glfwGetTime();
@@ -223,36 +303,35 @@ int main(int argc, char * argv[]){
 //////////////////////////////////////////////////////////////////////
         glUseProgram(shaderProgram);
 
-        float time = glfwGetTime();
-        mat4 model = GLM_MAT4_IDENTITY_INIT;
+        time = glfwGetTime();
 
-        glm_translate(model, (vec3){0.0f, 0.0f, -20.0f});
-        glm_rotate(model, time, (vec3){1.0f,1.0f,1.0f});
-
-
-
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (float*)model);
         mat4 view = GLM_MAT4_IDENTITY_INIT;
-        glm_translate(view, (vec3){0.0f,0.0f,0.0f});
+        glm_rotate(view, time, (vec3){1.0f, 1.0f, 0.0f});
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
-        mat4 projection = {1.0f};
-        glm_perspective(glm_rad(20.0f), 200.0f / 71.0f, 0.1f, 100.0f, projection);
+
+        mat4 projection;
+        glm_perspective(glm_rad(60.0f), (float)fb_width / (fb_height+150), 0.1f, 100.0f, projection);
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (float*)projection);
 
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(indices[0]), GL_UNSIGNED_INT, 0);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 36, TOTAL_CUBES); // 36 вершин на куб
+
         glPixelStorei(GL_PACK_ALIGNMENT, 1);//???
 
         glReadBuffer(GL_BACK);
 
         glReadPixels(0, 0, fb_width, fb_height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        int ic = 0;
         for(int i = 0; i < pixel_count*4; i+=4) {
-            print_block(pixels + i);
+            print_block(pixels + i, buffer, &ic);
             if (i%(fb_width*4) == 0) {
-                printf("\n");
+                buffer[ic] = '\n';
+                ic++;
+                //printf("\n");
             }
         }
-        printf("\033c");
+        fwrite(buffer, sizeof(char), pixel_count, stdout);
+        printf("\033[H");
 
 //////////////////////////////////////////////////////////////////////
         glfwSwapBuffers(window);
@@ -263,10 +342,12 @@ int main(int argc, char * argv[]){
             FPS = i;
             i = 0;
         }
-        printf("\nFPS: %d  %lg\n", FPS, time);
+        printf("\nFPS: %d %lg\n", FPS, time);
     }
     free(pixels);
-    //free(vertices);
+    free(buffer);
+    free(modelMatrices);
+    glDeleteBuffers(1, &instanceVBO);
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteProgram(shaderProgram);

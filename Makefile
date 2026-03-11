@@ -11,7 +11,7 @@ CXXFLAGS= -g -lm -D _DEBUG -ggdb3  -O0 -Wall -Wextra \
     -Wno-missing-field-initializers -Wno-narrowing -Wno-varargs -Wstack-protector -fcheck-new \
     -fstack-protector -fstrict-overflow -flto-odr-type-merging -fno-omit-frame-pointer \
     -Wstack-usage=8192 -pie -fPIE -Werror=vla \
-
+    -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,leak,nonnull-attribute,null,object-size,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 all: program
 	@echo "success"
 run: program

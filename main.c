@@ -50,14 +50,12 @@ const block blocks[BLOCKS_NUM] = {{{255,255,255,255}, '#'},
                                   {{0,255,0,255}, '&'},
                                   {{0,0,255}, '!'},
                                   };
-void print_block(unsigned char * pixels, char * buffer, int * ic){
+void print_block(unsigned char * pixels){
     char color[4];
     for( int i = 0; i < 4; i++) color[i] = pixels[i];
     for( int i = 0; i < BLOCKS_NUM; i++){
         if (color[0] == blocks[i].color[0] && color[1] == blocks[i].color[1] && color[2] == blocks[i].color[2]){
-            buffer[*ic] = blocks[i].ascii;
-            (*ic)+=1;
-            //printf("%c", blocks[i].ascii);
+            printf("%c", blocks[i].ascii);
             //printf("\033[1;48;2;%d;%d;%dm%c\033[0m", 255, 255, 255, '#');
         }
     }
@@ -291,10 +289,11 @@ int main(int argc, char * argv[]){
     unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
     unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
     unsigned int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-    char * buffer = calloc(data_size, sizeof(char));
+
     float time;
     while(!glfwWindowShouldClose(window))
     {
+
         global_time1 = glfwGetTime();
         processInput(window);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -321,16 +320,13 @@ int main(int argc, char * argv[]){
         glReadBuffer(GL_BACK);
 
         glReadPixels(0, 0, fb_width, fb_height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-        int ic = 0;
         for(int i = 0; i < pixel_count*4; i+=4) {
-            print_block(pixels + i, buffer, &ic);
+            print_block(pixels + i);
             if (i%(fb_width*4) == 0) {
-                buffer[ic] = '\n';
-                ic++;
-                //printf("\n");
+                printf("\n");
             }
         }
-        fwrite(buffer, sizeof(char), pixel_count, stdout);
+
         printf("\033[H");
 
 //////////////////////////////////////////////////////////////////////
@@ -345,7 +341,6 @@ int main(int argc, char * argv[]){
         printf("\nFPS: %d %lg\n", FPS, time);
     }
     free(pixels);
-    free(buffer);
     free(modelMatrices);
     glDeleteBuffers(1, &instanceVBO);
     glDeleteVertexArrays(1, &VAO);

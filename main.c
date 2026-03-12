@@ -58,8 +58,9 @@ const block blocks[BLOCKS_NUM] = {{{255,255,255,255}, '#'},
                                   {{0,255,0,255}, '&'},
                                   {{0,0,255}, '!'},
                                   };
-
+// #C0003C
 void print_block(unsigned char * pixels, float * pixels_depth, char * buffer, int * ic){
+    //printf("First pixel: R=%d G=%d B=%d\n", pixels[0], pixels[1], pixels[2]);
     char color[4];
     for( int i = 0; i < 4; i++) color[i] = pixels[i];
     for( int i = 0; i < BLOCKS_NUM; i++){
@@ -101,7 +102,7 @@ int main(int argc, char * argv[]){
     #endif
     //??????????
 
-    //My screen: 2560x1600 1000x1000 is a test
+    //My screen: 2560x1600
     int fb_width = 381, fb_height = 77;
     //int fb_width = 481, fb_height = 87;
     GLFWwindow * window = glfwCreateWindow(fb_width, fb_height, "Game Window", NULL,NULL);
@@ -230,26 +231,18 @@ float vertices[] = {
 
     mat4 * modelMatrices = malloc(TOTAL_CUBES * sizeof(mat4));
     int idx = 0;
-    for (int k = 0; k < CUBES_PER_AXIS; k++) {
+    for (int i = 0; i < CUBES_PER_AXIS; i++) {
         for (int j = 0; j < CUBES_PER_AXIS; j++) {
-            for (int i = 0; i < CUBES_PER_AXIS; i++) {
+            for (int k = 0; k < 10; k++) {
                 mat4 model = GLM_MAT4_IDENTITY_INIT;
-                if((k==(int)(CUBES_PER_AXIS/2) && k==i && k==j)){
-                    continue;
-                }
-                else{
-
-                    glm_translate(model, (vec3){
-                        (i - CUBES_PER_AXIS/2.0f) * 8.0f + (int)(CUBES_PER_AXIS/2),
-                        (j - CUBES_PER_AXIS/2.0f) * 8.0f + (int)(CUBES_PER_AXIS/2),
-                        (k - CUBES_PER_AXIS/2.0f) * 8.0f + (int)(CUBES_PER_AXIS/2)
-                    });
-                }
-
+                glm_translate(model, (vec3){
+                    i*2,
+                    -2+(int)(4*sin(i/10))+(int)(2*cos(j)) - 2*k + (int)(2*sin(i)),
+                    j*2,
+                });
                 glm_mat4_copy(model, modelMatrices[idx]);
                 idx++;
             }
-
         }
     }
 
@@ -315,7 +308,6 @@ float vertices[] = {
     int FPS = 0;
     int i = 0;
     printf("Start drawing\n");
-    glfwMakeContextCurrent(window);
     size_t pixel_count = fb_width * fb_height;
     size_t data_size = pixel_count * 4;
 
@@ -334,16 +326,16 @@ float vertices[] = {
     // set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // load and generate the texture
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(1);
-    unsigned char *data = stbi_load("cat.jpg", &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load("a.png", &width, &height, &nrChannels, 0);
     if (data)
     {
-        GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     }
     else
@@ -366,13 +358,13 @@ float vertices[] = {
         time = glfwGetTime();
 
         mat4 view = GLM_MAT4_IDENTITY_INIT;
-        //glm_rotate(view, time, (vec3){1.0f, 1.0f, 0.0f});
-        glm_translate(view, (vec3){0.0f, 0.0f, time*2});
+        glm_rotate(view, 45, (vec3){1.0f, 0.0f, 0.0f});
+        glm_translate(view, (vec3){-100, -30, -time*10 - 80});
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
 
         mat4 projection;
         //glm_perspective(glm_rad(60.0f), (float)fb_width / (fb_height+150), 0.1f, 100.0f, projection);
-        glm_perspective(glm_rad(60.0f), (float)fb_width / (fb_height+150), 0.1f, 1000.0f, projection);
+        glm_perspective(glm_rad(90.0f), (float)fb_width / (fb_height+150), 0.1f, 10000.0f, projection);
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (float*)projection);
 
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -386,6 +378,7 @@ float vertices[] = {
         glReadPixels(0, 0, fb_width, fb_height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         glReadPixels(0, 0, fb_width, fb_height, GL_DEPTH_COMPONENT, GL_FLOAT, pixels_depth);
         int ic = 0;
+        memset(buffer, 0, data_size);
         for(int i = 0; i < pixel_count*4; i+=4) {
             print_block(pixels + i, pixels_depth, buffer, &ic);
             //print_block(pixels + i, *(pixels_depth + i/4));
@@ -395,13 +388,8 @@ float vertices[] = {
                 //printf("\n");
             }
         }
-        fwrite(buffer, sizeof(char), pixel_count, stdout);
+        fwrite(buffer, sizeof(char), ic, stdout);
         printf("\033[H");
-
-
-
-
-
 //////////////////////////////////////////////////////////////////////
         glfwSwapBuffers(window);
         glfwPollEvents();

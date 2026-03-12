@@ -240,9 +240,9 @@ float vertices[] = {
                 else{
 
                     glm_translate(model, (vec3){
-                        (i - CUBES_PER_AXIS/2.0f) * 4.0f + (int)(CUBES_PER_AXIS/2),
-                        (j - CUBES_PER_AXIS/2.0f) * 4.0f + (int)(CUBES_PER_AXIS/2),
-                        (k - CUBES_PER_AXIS/2.0f) * 4.0f + (int)(CUBES_PER_AXIS/2)
+                        (i - CUBES_PER_AXIS/2.0f) * 8.0f + (int)(CUBES_PER_AXIS/2),
+                        (j - CUBES_PER_AXIS/2.0f) * 8.0f + (int)(CUBES_PER_AXIS/2),
+                        (k - CUBES_PER_AXIS/2.0f) * 8.0f + (int)(CUBES_PER_AXIS/2)
                     });
                 }
 
@@ -282,11 +282,11 @@ float vertices[] = {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     //set pointers
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(6);
 
 

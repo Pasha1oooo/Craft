@@ -15,5 +15,6 @@ void processInput(GLFWwindow * window){
          printf("ESC\n");
          glfwSetWindowShouldClose(window, 1);
     }
+
 }
 

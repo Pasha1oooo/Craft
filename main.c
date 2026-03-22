@@ -283,6 +283,22 @@ int main(int argc, char * argv[]){
     }
     stbi_image_free(data);
 ///////////////////////////////////////////texture
+    vec3 cameraPos = {0.0f, 0.0f, 3.0f};
+    vec3 cameraTarget = {0.0f, 0.0f, 0.0f};
+    vec3 cameraDirection;
+    glm_vec3_sub(cameraPos, cameraTarget, cameraDirection);
+    glm_vec3_normalize(cameraDirection);
+    vec3 up = {0.0f, 1.0f, 0.0f};
+    vec3 cameraRight;
+    glm_cross(up, cameraDirection, cameraRight);
+    glm_normalize(cameraRight);
+    vec3 cameraUp;
+    glm_cross(cameraDirection, cameraRight, cameraUp);
+    mat4 view = GLM_MAT4_IDENTITY_INIT;
+    const float radius = 10.0f;
+    float camX = sin(glfwGetTime()) * radius;
+    float camZ = cos(glfwGetTime()) * radius;
+
 
     printf("Start render\n");
     while(!glfwWindowShouldClose(window))
@@ -299,9 +315,27 @@ int main(int argc, char * argv[]){
         glUseProgram(shaderProgram);
         glUniform1i(glGetUniformLocation(shaderProgram, "ourTexture"), 0);
 
-        mat4 view = GLM_MAT4_IDENTITY_INIT;
-        glm_rotate(view, 45, (vec3){1.0f, 0.0f, 0.0f});
-        glm_translate(view, (vec3){-100, -30, -global_time*10 - 80});
+
+        if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
+            glm_vec3_sub(cameraPos, (vec3){1,0,0}, cameraPos);
+        }
+        if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
+            glm_vec3_sub(cameraPos, (vec3){-1,0,0}, cameraPos);
+        }
+        if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
+            glm_vec3_sub(cameraPos, (vec3){0,1,0}, cameraPos);
+        }
+        if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
+            glm_vec3_sub(cameraPos, (vec3){0,-1,0}, cameraPos);
+        }
+        if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
+            glm_vec3_sub(cameraPos, (vec3){0,0,1}, cameraPos);
+        }
+        if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
+            glm_vec3_sub(cameraPos, (vec3){0,0,-1}, cameraPos);
+        }
+        glm_lookat(cameraPos, (vec3){0.0f, 0.0f, 2.0f}, cameraUp, view);
+
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
 
         mat4 projection;

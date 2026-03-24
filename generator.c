@@ -1,0 +1,185 @@
+/* generation.c */
+
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include "generator.h"
+
+const int CHUNK_SIZE = 16;
+const int RENDER_DISTANCE = 2;
+const int CHUNK_NAME_LEN = 64;
+const char CHUNK_FILENAME_EXTENSION[] = ".chunk";
+const char FILE_PATH[] = "saves/";
+
+struct chunk *init_chunks(void)
+{
+	const int SIDE = 2 * RENDER_DISTANCE - 1;
+	struct chunk *loaded_chunks = (struct chunk *)calloc((int)pow(SIDE, 3),
+	                                                 sizeof(struct chunk));
+
+	for (int i = 0; i < (int)pow(SIDE, 3); i++) {
+
+		loaded_chunks[i].chunk_data = (char *)calloc(
+		                    (size_t)pow(CHUNK_SIZE, 3), sizeof(char));
+
+		loaded_chunks[i].pos = (struct position *)calloc(1,
+		                                      sizeof(struct position));
+	}
+
+	return loaded_chunks;
+}
+
+void deinit_chunks(struct chunk *chunks)
+{
+	const int SIDE = 2 * RENDER_DISTANCE - 1;
+
+	for (int i = 0; i < (int)pow(SIDE, 3); i++) {
+		free(chunks[i].chunk_data);
+		free(chunks[i].pos);
+	}
+
+	free(chunks);
+
+	return;
+}
+
+void get_chunks(struct chunk *chunks, struct position *player_pos)
+{
+	const int SIDE = 2 * RENDER_DISTANCE - 1;
+	struct position local_chunk_pos;
+
+	for (int i = 0; i < (int)pow(SIDE, 3); i++) {
+		local_chunk_pos.x = (i % SIDE);
+		local_chunk_pos.y = (i / SIDE) % SIDE;
+		local_chunk_pos.z = (i / SIDE) / SIDE;
+
+		chunks[i].pos->x = player_pos->x / CHUNK_SIZE +
+		                                  local_chunk_pos.x - SIDE / 2;
+
+		chunks[i].pos->y = player_pos->y / CHUNK_SIZE +
+		                                  local_chunk_pos.y - SIDE / 2;
+
+		chunks[i].pos->z = player_pos->z / CHUNK_SIZE +
+		                                  local_chunk_pos.z - SIDE / 2;
+
+		gen_chunk(&(chunks[i]));
+	}
+
+	return;
+}
+
+void gen_chunk(struct chunk *chunk)
+{
+	struct position local_pos;
+	char *chunk_file_name = get_chunk_name(chunk->pos);
+	FILE *chunk_file = fopen(chunk_file_name, "rb");
+	char ch = 0;
+
+	if (chunk_file == NULL) {
+
+		for (int i = 0; i < (int)pow(CHUNK_SIZE, 3); i++) {
+			local_pos.x = (i % CHUNK_SIZE);
+			local_pos.y = (i / CHUNK_SIZE) % CHUNK_SIZE;
+			local_pos.z = (i / CHUNK_SIZE) / CHUNK_SIZE;
+
+			ch = chunk_gen_logic(chunk->pos, &local_pos);
+			chunk->chunk_data[i] = ch;
+		}
+
+		save_chunk(chunk->chunk_data, chunk_file_name);
+
+	} else {
+
+		load_chunk(chunk->chunk_data, chunk_file_name);
+	}
+
+	free(chunk_file_name);
+
+	return;
+}
+
+void save_chunk(char *chunk_data, char *file_name)
+{
+	size_t blocks_amount = (size_t)pow(CHUNK_SIZE, 3);
+	FILE *file = fopen(file_name, "wb");
+
+	fwrite(chunk_data, sizeof(char), blocks_amount, file);
+	fclose(file);
+
+	printf("Chunk [%s] was generated\n", file_name);
+
+	return;
+}
+
+void load_chunk(char *chunk_data, char *file_name)
+{
+	size_t blocks_amount = (size_t)pow(CHUNK_SIZE, 3);
+	size_t blocks_size = (size_t)(blocks_amount * sizeof(char));
+	FILE *file = fopen(file_name, "rb");
+
+	fread(chunk_data, blocks_size, blocks_amount, file);
+	fclose(file);
+
+	return;
+}
+
+char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
+{
+	int x = chunk_pos->x * CHUNK_SIZE + local_pos->x;
+	int y = chunk_pos->y * CHUNK_SIZE + local_pos->y;
+	int z = chunk_pos->z * CHUNK_SIZE + local_pos->z;
+	int result = ' ';
+
+	if (2 * sin((float)x / 2) + 20 * sin((float)y / 5) + 6.0f >=
+	                                                            (float)z) {
+		result = '*';
+	}
+
+	return result;
+}
+
+char *get_chunk_name(struct position *chunk_pos)
+{
+	char *chunk_name = (char *)calloc(CHUNK_NAME_LEN, sizeof(char));
+	char *str_pos = chunk_name + strlen(FILE_PATH);
+	size_t extension_len = strlen(CHUNK_FILENAME_EXTENSION);
+
+	strcpy(chunk_name, FILE_PATH);
+
+	str_pos = num2str(str_pos, chunk_pos->x);
+	str_pos[0] = '_';
+	str_pos = num2str(++str_pos, chunk_pos->y);
+	str_pos[0] = '_';
+	str_pos = num2str(++str_pos, chunk_pos->z);
+
+	for (size_t i = 0; i < extension_len; i++)
+		str_pos[i] = CHUNK_FILENAME_EXTENSION[i];
+
+	return chunk_name;
+}
+
+char *num2str(char *str, int num)
+{
+	int ch = num % 10;
+
+	if (num > 0) {
+		if (num / 10 != 0)
+			str = num2str(str, num / 10);
+
+		str[0] = ch + '0';
+		str++;
+
+	} else if(num < 0) {
+
+		str[0] = '-';
+		str = num2str(str + 1, -num);
+
+	} else if (num == 0) {
+
+		str[0] = '0';
+		str++;
+	}
+
+	return str;
+}

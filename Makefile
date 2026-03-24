@@ -18,4 +18,4 @@ run: program
 	@echo "success"
 	./a.out
 program: main.c
-	@gcc $(CXXFLAGS) main.c glad.c -lglfw -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+	@gcc $(CXXFLAGS) main.c glad.c generator.c -lglfw -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl

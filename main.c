@@ -8,8 +8,7 @@
 #include <cglm/cglm.h>
 #include <time.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "external/stb/stb_image.h"
+
 
 //#define background(R,G,B,str) printf("\033[1;48;2;%d;%d;%dm%c\033[0m", R, G, B, str);
 const char *vertexShaderSource = "#version 460 core\n"
@@ -19,9 +18,7 @@ const char *vertexShaderSource = "#version 460 core\n"
     "layout (location = 3) in vec4 aInstanceCol1;\n"
     "layout (location = 4) in vec4 aInstanceCol2;\n"
     "layout (location = 5) in vec4 aInstanceCol3;\n"
-    "layout (location = 6) in vec2 aTexCoord;\n"
     "out vec3 color;\n"
-    "out vec2 TexCoord;\n"
     "uniform mat4 view;\n"
     "uniform mat4 projection;\n"
     "void main()\n"
@@ -29,18 +26,15 @@ const char *vertexShaderSource = "#version 460 core\n"
     "mat4 model = mat4(aInstanceCol0, aInstanceCol1, aInstanceCol2, aInstanceCol3);\n"
     "gl_Position = projection * view * model * vec4(aPos, 1.0f);\n"
     "color = aColor;\n"
-    "TexCoord = aTexCoord;\n"
     "}\n\0";
 // in: VBO -> aPos
 
 const char *fragmentShaderSource = "#version 460 core\n"
     "out vec4 FragColor;\n"
     "in vec3 color;\n"
-    "in vec2 TexCoord;\n"
-    "uniform sampler2D ourTexture;\n"
     "void main()\n"
     "{\n"
-    "FragColor = texture(ourTexture, TexCoord);\n"
+    "FragColor = vec4(color, 1.0f);\n"
     "}\n";
 // out: shader -> FrameBuffer
 
@@ -105,33 +99,31 @@ void create_window(GLFWwindow ** window, int fb_width , int fb_height){
     glfwMakeContextCurrent(*window);
 }
 void create_shader_program(unsigned int * shaderProgram){
-
     *shaderProgram = glCreateProgram();
-    //Vertex shader
-    unsigned int vertexShader;
-    vertexShader =  glCreateShader(GL_VERTEX_SHADER);
+    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);
-
-    //Fragment shader
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    // Проверка компиляции...
+    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
-
+    // Проверка...
     glAttachShader(*shaderProgram, vertexShader);
     glAttachShader(*shaderProgram, fragmentShader);
     glLinkProgram(*shaderProgram);
+    // Проверка линковки...
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
-    *shaderProgram = glCreateProgram();
 }
-
 mat4 * create_chunk(struct chunk chunk, int * num){
     int CUBES_PER_AXIS = 16;
     int TOTAL_CUBES = CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS;
     mat4 * modelMatrices = calloc(TOTAL_CUBES, sizeof(mat4));
-    if(modelMatrices == NULL) printf("ERROR");
+    if(modelMatrices == NULL) {
+        printf("ERROR: memory allocation failed\n");
+        *num = 0;
+        return NULL;
+    }
     int idx = 0;
     for (int i = 0; i < TOTAL_CUBES; i++) {
         if(chunk.chunk_data[i] == '*'){
@@ -191,36 +183,36 @@ int main(int argc, char * argv[]){
     }
 
     float vertices[] = {
-        //coordinates           //color                 //texture
-        1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,       1.0f, 1.0f,
-        -1.0f,1.0f, 1.0f,       0.0f, 0.0f, 1.0f,       0.0f, 1.0f,
-        1.0f, -1.0f, 1.0f,       0.0f, 0.0f, 1.0f,      1.0f, 0.0f,
-        -1.0f, -1.0f, 1.0f,       0.0f, 0.0f, 1.0f,     0.0f, 0.0f,
+        //coordinates           //color
+        1.0f, 1.0f, 1.0f,       0.0f, 0.0f, 1.0f,
+        -1.0f,1.0f, 1.0f,       0.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,       0.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, 1.0f,       0.0f, 0.0f, 1.0f,
 
-        1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,       1.0f, 1.0f,
-        1.0f,-1.0f, 1.0f,       0.0f, 1.0f, 0.0f,       0.0f, 1.0f,
-        1.0f, 1.0f, -1.0f,      0.0f, 1.0f, 0.0f,      1.0f, 0.0f,
-        1.0f, -1.0f, -1.0f,     0.0f, 1.0f, 0.0f,     0.0f, 0.0f,
+        1.0f, 1.0f, 1.0f,       0.0f, 1.0f, 0.0f,
+        1.0f,-1.0f, 1.0f,       0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,      0.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, -1.0f,     0.0f, 1.0f, 0.0f,
 
-        1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 1.0f,       1.0f, 1.0f,
-        -1.0f,1.0f, 1.0f,       1.0f, 0.0f, 1.0f,       0.0f, 1.0f,
-        1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,      1.0f, 0.0f,
-        -1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,     0.0f, 0.0f,
+        1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 1.0f,
+        -1.0f,1.0f, 1.0f,       1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,
 
-        1.0f, 1.0f, -1.0f,       0.0f, 1.0f, 1.0f,      1.0f, 1.0f,
-        -1.0f,1.0f, -1.0f,       0.0f, 1.0f, 1.0f,      0.0f, 1.0f,
-        1.0f, -1.0f, -1.0f,       0.0f, 1.0f, 1.0f,     1.0f, 0.0f,
-        -1.0f, -1.0f, -1.0f,       0.0f, 1.0f, 1.0f,    0.0f, 0.0f,
+        1.0f, 1.0f, -1.0f,       0.0f, 1.0f, 1.0f,
+        -1.0f,1.0f, -1.0f,       0.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, -1.0f,       0.0f, 1.0f, 1.0f,
+        -1.0f, -1.0f, -1.0f,       0.0f, 1.0f, 1.0f,
 
-        -1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 1.0f,      1.0f, 1.0f,
-        -1.0f,-1.0f, 1.0f,       1.0f, 0.0f, 1.0f,      0.0f, 1.0f,
-        -1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,     1.0f, 0.0f,
-        -1.0f, -1.0f, -1.0f,       1.0f, 0.0f, 1.0f,    0.0f, 0.0f,
+        -1.0f, 1.0f, 1.0f,       1.0f, 0.0f, 1.0f,
+        -1.0f,-1.0f, 1.0f,       1.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, -1.0f,       1.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, -1.0f,       1.0f, 0.0f, 1.0f,
 
-        1.0f, -1.0f, 1.0f,       1.0f, 1.0f, 0.0f,      1.0f, 1.0f,
-        -1.0f,-1.0f, 1.0f,       1.0f, 1.0f, 0.0f,      0.0f, 1.0f,
-        1.0f, -1.0f, -1.0f,       1.0f, 1.0f, 0.0f,     1.0f, 0.0f,
-        -1.0f,-1.0f, -1.0f,        1.0,  1.0f, 0.0f,    0.0f, 0.0f,
+        1.0f, -1.0f, 1.0f,       1.0f, 1.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,       1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, -1.0f,       1.0f, 1.0f, 0.0f,
+        -1.0f,-1.0f, -1.0f,        1.0,  1.0f, 0.0f,
 
     };
     unsigned int indices[] = {
@@ -280,56 +272,14 @@ int main(int argc, char * argv[]){
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(6);
+
 
 
     unsigned int shaderProgram;
     create_shader_program(&shaderProgram);
 
 
-    //Vertex shader
-    unsigned int vertexShader;
-    vertexShader =  glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
 
-    //Fragment shader
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-///////////////////////////////////////////texture
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    // set the texture wrapping/filtering options (on the currently bound texture object)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    // load and generate the texture
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(1);
-    unsigned char *data = stbi_load("a.png", &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else
-    {
-        printf("Failed to load texture\n");
-    }
-    stbi_image_free(data);
-///////////////////////////////////////////texture
 
     float frame_start = 0 , frame_end = 0, global_time = 0;
     int FPS = 0, frame_counter = 0;
@@ -352,9 +302,7 @@ int main(int argc, char * argv[]){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //////////////////////////////////////////////////////////////////////
 
-        //glBindTexture(GL_TEXTURE_2D, texture);
         glUseProgram(shaderProgram);
-        glUniform1i(glGetUniformLocation(shaderProgram, "ourTexture"), 0);
 
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) player.z -= player.speed;
@@ -381,12 +329,11 @@ int main(int argc, char * argv[]){
             int num;
             mat4 *modelMatrices = create_chunk(loaded_chunks[i], &num);
             if (modelMatrices == NULL) {
-                fprintf(stderr, "Ошибка выделения памяти для модели чанка\n");
-                break;
+                fprintf(stderr, "Failed to create chunk model matrices\n");
+                continue; // или break, но лучше пропустить чанк
             }
-            glBindTexture(GL_TEXTURE_2D, texture);
             glBindVertexArray(VAO);
-            glBufferData(GL_ARRAY_BUFFER, 4096 * sizeof(mat4), modelMatrices, GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, num * sizeof(mat4), modelMatrices, GL_STATIC_DRAW);
             glDrawElementsInstanced(GL_TRIANGLES, sizeof(indices)/sizeof(indices[0]), GL_UNSIGNED_INT, 0, num);
             free(modelMatrices);
         }

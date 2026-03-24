@@ -77,30 +77,18 @@ void get_chunks(struct chunk *chunks, vec3 a)
 void gen_chunk(struct chunk *chunk)
 {
 	struct position local_pos;
-	char *chunk_file_name = get_chunk_name(chunk->pos);
-	FILE *chunk_file = fopen(chunk_file_name, "rb");
+	//char *chunk_file_name = get_chunk_name(chunk->pos);
+	//FILE *chunk_file = fopen(chunk_file_name, "rb");
 	char ch = 0;
 
-	if (chunk_file == NULL) {
 
-		for (int i = 0; i < (int)pow(CHUNK_SIZE, 3); i++) {
-			local_pos.x = (i % CHUNK_SIZE);
-			local_pos.y = (i / CHUNK_SIZE) % CHUNK_SIZE;
-			local_pos.z = (i / CHUNK_SIZE) / CHUNK_SIZE;
-
-			ch = chunk_gen_logic(chunk->pos, &local_pos);
-			chunk->chunk_data[i] = ch;
-		}
-
-		save_chunk(chunk->chunk_data, chunk_file_name);
-
-	} else {
-
-		load_chunk(chunk->chunk_data, chunk_file_name);
+	for (int i = 0; i < (int)pow(CHUNK_SIZE, 3); i++) {
+		local_pos.x = (i % CHUNK_SIZE);
+		local_pos.y = (i / CHUNK_SIZE) % CHUNK_SIZE;
+		local_pos.z = (i / CHUNK_SIZE) / CHUNK_SIZE;
+		ch = chunk_gen_logic(chunk->pos, &local_pos);
+		chunk->chunk_data[i] = ch;
 	}
-
-	free(chunk_file_name);
-
 	return;
 }
 
@@ -119,14 +107,12 @@ void save_chunk(char *chunk_data, char *file_name)
 
 void load_chunk(char *chunk_data, char *file_name)
 {
-	size_t blocks_amount = (size_t)pow(CHUNK_SIZE, 3);
-	size_t blocks_size = (size_t)(blocks_amount * sizeof(char));
-	FILE *file = fopen(file_name, "rb");
-
-	fread(chunk_data, blocks_size, blocks_amount, file);
-	fclose(file);
-
-	return;
+    size_t blocks_amount = (size_t)pow(CHUNK_SIZE, 3);
+    FILE *file = fopen(file_name, "rb");
+    if (file) {
+        fread(chunk_data, sizeof(char), blocks_amount, file);
+        fclose(file);
+    }
 }
 
 char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)

@@ -1,6 +1,6 @@
 #ifndef GENERATOR_H
 #define GENERATOR_H
-
+#include <cglm/cglm.h>
 extern const int CHUNK_SIZE;
 extern const int RENDER_DISTANCE;
 extern const int CHUNK_NAME_LEN;
@@ -19,7 +19,7 @@ struct chunk {
 struct chunk *init_chunks(void);
 void deinit_chunks(struct chunk *chunks);
 
-void get_chunks(struct chunk *chunks, struct position *player_pos);
+void get_chunks(struct chunk *chunks, vec3 a);
 void gen_chunk(struct chunk *chunk);
 char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos);
 

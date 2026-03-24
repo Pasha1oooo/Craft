@@ -127,40 +127,41 @@ void create_shader_program(unsigned int * shaderProgram){
     *shaderProgram = glCreateProgram();
 }
 
-mat4 * create_chunk(struct chunk chunk){
+mat4 * create_chunk(struct chunk chunk, int * num){
     int CUBES_PER_AXIS = 16;
-    int TOTAL_CUBES = (CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS);
+    int TOTAL_CUBES = CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS;
     mat4 * modelMatrices = calloc(TOTAL_CUBES, sizeof(mat4));
+    if(modelMatrices == NULL) printf("ERROR");
     int idx = 0;
     for (int i = 0; i < TOTAL_CUBES; i++) {
         if(chunk.chunk_data[i] == '*'){
             mat4 model = GLM_MAT4_IDENTITY_INIT;
             glm_translate(model, (vec3){
-                chunk.pos->x,
-                chunk.pos->y,
-                chunk.pos->z,
+                chunk.pos->x * CUBES_PER_AXIS + (i % CUBES_PER_AXIS),
+                chunk.pos->y * CUBES_PER_AXIS + (i / CUBES_PER_AXIS) % CUBES_PER_AXIS,
+                chunk.pos->z * CUBES_PER_AXIS + (i / CUBES_PER_AXIS) / CUBES_PER_AXIS,
             });
             glm_mat4_copy(model, modelMatrices[idx]);
             idx++;
         }
     }
+    *num = idx;
+    return modelMatrices;
 }
 
-chunk *** create_chunk_map(int MAX_CHUNKS_PER_AXIS){
-    calloc(pow(MAX_CHUNKS_PER_AXIS, 3), sizeof(chunk));
-}
+//chunk *** create_chunk_map(int MAX_CHUNKS_PER_AXIS){
+//    calloc(pow(MAX_CHUNKS_PER_AXIS, 3), sizeof(chunk));
+//}
 camera create_camera(){
     camera camera;
     glm_vec3_copy((vec3){0.0f, 0.0f, 0.0f}, camera.cameraPos);
     glm_vec3_copy((vec3){0.0f, 0.0f, 0.0f}, camera.cameraTarget);
     glm_vec3_copy((vec3){0.0f, 0.0f, 0.0f}, camera.cameraDirection);
     glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.up);
-    vec3 cameraRight;
-    vec3 cameraUp;
     glm_vec3_sub(camera.cameraPos, camera.cameraTarget, camera.cameraDirection);
     glm_vec3_normalize(camera.cameraDirection);
     glm_cross(camera.up, camera.cameraDirection, camera.cameraRight);
-    glm_normalize(cameraRight);
+    glm_normalize(camera.cameraRight);
     glm_cross(camera.cameraDirection, camera.cameraRight, camera.cameraUp);
     return camera;
 }
@@ -171,6 +172,7 @@ player create_player(){
     player.y = 0;
     player.z = 0;
     player.speed = 0.1f;
+    return player;
 }
 int main(int argc, char * argv[]){
     printf("Start\n");
@@ -242,7 +244,7 @@ int main(int argc, char * argv[]){
 
     };
     #define MAX_CHUNKS_PER_AXIS 2
-    chunk *** world = create_chunk_map(MAX_CHUNKS_PER_AXIS);
+    //chunk *** world = create_chunk_map(MAX_CHUNKS_PER_AXIS);
     //configuration VBO
 
     unsigned int VBO, VAO, EBO, instanceVBO;
@@ -252,7 +254,7 @@ int main(int argc, char * argv[]){
 
     glGenBuffers(1, &instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, TOTAL_CUBES * sizeof(mat4), modelMatrices, GL_STATIC_DRAW);
+
 
 
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)0);
@@ -355,24 +357,12 @@ int main(int argc, char * argv[]){
         glUniform1i(glGetUniformLocation(shaderProgram, "ourTexture"), 0);
 
 
-        if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
-            player.x += player.speed;
-        }
-        if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
-            player.x += player.speed;
-        }
-        if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
-            player.x += player.speed;
-        }
-        if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
-            player.x += player.speed;
-        }
-        if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS){
-            player.x += player.speed;
-        }
-        if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS){
-            player.x += player.speed;
-        }
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) player.z -= player.speed;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) player.z += player.speed;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) player.x += player.speed;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) player.x -= player.speed;
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) player.y += player.speed;
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) player.y -= player.speed;
 
         glm_vec3_copy((vec3){player.x, player.y, player.z}, player.head.cameraPos);
 
@@ -382,10 +372,26 @@ int main(int argc, char * argv[]){
         glm_perspective(glm_rad(90.0f), (float)fb_width / (fb_height+150), 0.1f, 10000.0f, projection);
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (float*)projection);
 
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glBindVertexArray(VAO);
 
-        glDrawElementsInstanced(GL_TRIANGLES,  sizeof(indices)/sizeof(indices[0]), GL_UNSIGNED_INT, 0, TOTAL_CUBES);
+
+        struct chunk *loaded_chunks = init_chunks();
+        get_chunks(loaded_chunks, player.head.cameraPos);
+        glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+        for (int i = 0; i < 27; i++) {
+            int num;
+            mat4 *modelMatrices = create_chunk(loaded_chunks[i], &num);
+            if (modelMatrices == NULL) {
+                fprintf(stderr, "Ошибка выделения памяти для модели чанка\n");
+                break;
+            }
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glBindVertexArray(VAO);
+            glBufferData(GL_ARRAY_BUFFER, 4096 * sizeof(mat4), modelMatrices, GL_STATIC_DRAW);
+            glDrawElementsInstanced(GL_TRIANGLES, sizeof(indices)/sizeof(indices[0]), GL_UNSIGNED_INT, 0, num);
+            free(modelMatrices);
+        }
+        deinit_chunks(loaded_chunks); // <-- освобождаем память чанков
+
 
 //////////////////////////////////////////////////////////////////////
         glfwSwapBuffers(window);
@@ -400,8 +406,6 @@ int main(int argc, char * argv[]){
         printf("\nFPS: %d %lg\n", FPS, global_time);
     }
 
-    free(modelMatrices);
-    free(world);/////////////////////////////////////////////
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &instanceVBO);
     glDeleteBuffers(1, &VBO);

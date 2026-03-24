@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "generator.h"
+#include <cglm/cglm.h>
 
 const int CHUNK_SIZE = 16;
 const int RENDER_DISTANCE = 2;
@@ -44,8 +45,12 @@ void deinit_chunks(struct chunk *chunks)
 	return;
 }
 
-void get_chunks(struct chunk *chunks, struct position *player_pos)
+void get_chunks(struct chunk *chunks, vec3 a)
 {
+    struct position player_pos;
+    player_pos.x = (int)a[0];
+    player_pos.y = (int)a[1];
+    player_pos.z = (int)a[2];
 	const int SIDE = 2 * RENDER_DISTANCE - 1;
 	struct position local_chunk_pos;
 
@@ -54,13 +59,13 @@ void get_chunks(struct chunk *chunks, struct position *player_pos)
 		local_chunk_pos.y = (i / SIDE) % SIDE;
 		local_chunk_pos.z = (i / SIDE) / SIDE;
 
-		chunks[i].pos->x = player_pos->x / CHUNK_SIZE +
+		chunks[i].pos->x = player_pos.x / CHUNK_SIZE +
 		                                  local_chunk_pos.x - SIDE / 2;
 
-		chunks[i].pos->y = player_pos->y / CHUNK_SIZE +
+		chunks[i].pos->y = player_pos.y / CHUNK_SIZE +
 		                                  local_chunk_pos.y - SIDE / 2;
 
-		chunks[i].pos->z = player_pos->z / CHUNK_SIZE +
+		chunks[i].pos->z = player_pos.z / CHUNK_SIZE +
 		                                  local_chunk_pos.z - SIDE / 2;
 
 		gen_chunk(&(chunks[i]));

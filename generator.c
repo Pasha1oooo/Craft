@@ -8,7 +8,7 @@
 #include <cglm/cglm.h>
 
 const int CHUNK_SIZE = 16;
-const int RENDER_DISTANCE = 2;
+const int RENDER_DISTANCE = 3;
 const int CHUNK_NAME_LEN = 64;
 const char CHUNK_FILENAME_EXTENSION[] = ".chunk";
 const char FILE_PATH[] = "saves/";
@@ -122,7 +122,7 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	int z = chunk_pos->z * CHUNK_SIZE + local_pos->z;
 	int result = ' ';
 
-	if (2 * sin((float)x / 2) + 20 * sin((float)y / 5) + 6.0f >=
+	if (sin((float)x) + sin((float)y) + 4 <=
 	                                                            (float)z) {
 		result = '*';
 	}

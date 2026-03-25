@@ -45,14 +45,15 @@ void deinit_chunks(struct chunk *chunks)
 	return;
 }
 
-void get_chunks(struct chunk *chunks, vec3 a)
+void get_chunks(struct chunk *chunks, vec3 player_vector_pos)
 {
-    struct position player_pos;
-    player_pos.x = (int)a[0];
-    player_pos.y = (int)a[1];
-    player_pos.z = (int)a[2];
+	struct position player_pos;
 	const int SIDE = 2 * RENDER_DISTANCE - 1;
 	struct position local_chunk_pos;
+
+	player_pos.x = (int)player_vector_pos[0];
+	player_pos.y = (int)player_vector_pos[1];
+	player_pos.z = (int)player_vector_pos[2];
 
 	for (int i = 0; i < (int)pow(SIDE, 3); i++) {
 		local_chunk_pos.x = (i % SIDE);

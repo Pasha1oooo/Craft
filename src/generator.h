@@ -1,6 +1,8 @@
 #ifndef GENERATOR_H
 #define GENERATOR_H
+
 #include <cglm/cglm.h>
+
 extern const int CHUNK_SIZE;
 extern const int RENDER_DISTANCE;
 extern const int CHUNK_NAME_LEN;

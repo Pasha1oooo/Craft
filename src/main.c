@@ -1,4 +1,4 @@
-#include <glad/glad.h>
+#include "../include/glad/glad.h"
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <math.h>
@@ -9,7 +9,7 @@
 #include <time.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "external/stb/stb_image.h"
+#include "../external/stb/stb_image.h"
 
 //#define background(R,G,B,str) printf("\033[1;48;2;%d;%d;%dm%c\033[0m", R, G, B, str);
 const char *vertexShaderSource = "#version 460 core\n"

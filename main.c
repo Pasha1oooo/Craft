@@ -20,16 +20,21 @@ const char *vertexShaderSource = "#version 460 core\n"
     "layout (location = 4) in vec4 aInstanceCol2;\n"
     "layout (location = 5) in vec4 aInstanceCol3;\n"
     "layout (location = 6) in vec2 aTexCoord;\n"
+    "layout (location = 7) in vec3 aNormal;\n"
     "out vec3 color;\n"
     "out vec2 TexCoord;\n"
+    "out vec3 Normal;\n"
+    "out vec3 FragPos;\n"
     "uniform mat4 view;\n"
     "uniform mat4 projection;\n"
     "void main()\n"
     "{\n"
     "mat4 model = mat4(aInstanceCol0, aInstanceCol1, aInstanceCol2, aInstanceCol3);\n"
     "gl_Position = projection * view * model * vec4(aPos, 1.0f);\n"
+    "FragPos = vec3(model * vec4(aPos, 1.0));\n"
     "color = aColor;\n"
     "TexCoord = aTexCoord;\n"
+    "Normal = aNormal;\n"
     "}\n\0";
 // in: VBO -> aPos
 
@@ -37,23 +42,24 @@ const char *fragmentShaderSource = "#version 460 core\n"
     "out vec4 FragColor;\n"
     "in vec3 color;\n"
     "in vec2 TexCoord;\n"
+    "in vec3 Normal;\n"
+    "in vec3 FragPos;\n"
     "uniform sampler2D ourTexture;\n"
     "void main()\n"
     "{\n"
-    "FragColor = texture(ourTexture, TexCoord);\n"
+    "vec3 norm = normalize(Normal);\n"
+    "vec3 lightDir = normalize(vec3(0.0, 1.0, 1.0) - FragPos);\n"
+    "float diff = max(dot(norm, lightDir), 0.1);\n"
+    "vec3 result = diff * color;\n"
+    "FragColor = texture(ourTexture, TexCoord) * vec4(result, 1.0f);\n"
     "}\n";
+
 // out: shader -> FrameBuffer
 
 typedef struct block{
     char color[4];
     char ascii;
 }block;
-
-//typedef struct chunk{
-//    mat4 blocks[4096];
-//    int x;
-//    int y;
-//}chunk;
 
 typedef struct camera{
     vec3 cameraPos;
@@ -125,10 +131,6 @@ mat4 * create_chunk(struct chunk chunk, int * num){
     *num = idx;
     return modelMatrices;
 }
-
-//chunk *** create_chunk_map(int MAX_CHUNKS_PER_AXIS){
-//    calloc(pow(MAX_CHUNKS_PER_AXIS, 3), sizeof(chunk));
-//}
 camera create_camera(){
     camera camera;
     glm_vec3_copy((vec3){0.0f, 10.0f, 10.0f}, camera.cameraPos);
@@ -168,37 +170,43 @@ int main(int argc, char * argv[]){
     }
 
     float vertices[] = {
-        //coordinates           //color                 //texture
-        0.5f, 0.5f, 0.5f,       0.0f, 0.0f, 1.0f,       1.0f, 1.0f,
-        -0.5f, 0.5f, 0.5f,       0.0f, 0.0f, 1.0f,       0.0f, 1.0f,
-        0.5f, -0.5f, 0.5f,       0.0f, 0.0f, 1.0f,      1.0f, 0.0f,
-        -0.5f, -0.5f, 0.5f,       0.0f, 0.0f, 1.0f,     0.0f, 0.0f,
+    //coordinates          //color             //texture     //normal
+    // Передняя грань (+Z)
+     0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
 
-        0.5f, 0.5f, 0.5f,       0.0f, 1.0f, 0.0f,       1.0f, 1.0f,
-        0.5f, -0.5f, 0.5f,       0.0f, 1.0f, 0.0f,       0.0f, 1.0f,
-        0.5f, 0.5f, -0.5f,      0.0f, 1.0f, 0.0f,      1.0f, 0.0f,
-        0.5f, -0.5f, -0.5f,     0.0f, 1.0f, 0.0f,     0.0f, 0.0f,
+    // Правая грань (+X)
+     0.5f,  0.5f,  0.5f,   0.0f, 1.0f, 0.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,   0.0f, 1.0f, 0.0f,   0.0f, 1.0f,   1.0f, 0.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
 
-        0.5f, 0.5f, 0.5f,       1.0f, 0.0f, 1.0f,       1.0f, 1.0f,
-        -0.5f, 0.5f, 0.5f,       1.0f, 0.0f, 1.0f,       0.0f, 1.0f,
-        0.5f, 0.5f, -0.5f,       1.0f, 0.0f, 1.0f,      1.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f,       1.0f, 0.0f, 1.0f,     0.0f, 0.0f,
+    // Верхняя грань (+Y)
+     0.5f,  0.5f,  0.5f,   0.0f, 0.3f, 1.0f,   1.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,   0.0f, 0.3f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,   0.0f, 0.3f, 1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,   0.0f, 0.3f, 1.0f,   0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
 
-        0.5f, 0.5f, -0.5f,       0.0f, 1.0f, 1.0f,      1.0f, 1.0f,
-        -0.5f, 0.5f, -0.5f,       0.0f, 1.0f, 1.0f,      0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,       0.0f, 1.0f, 1.0f,     1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,       0.0f, 1.0f, 1.0f,    0.0f, 0.0f,
+    // Задняя грань (-Z)
+     0.5f,  0.5f, -0.5f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f,-1.0f,
+    -0.5f,  0.5f, -0.5f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,   0.0f, 0.0f,-1.0f,
+     0.5f, -0.5f, -0.5f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,   0.0f, 0.0f,-1.0f,
+    -0.5f, -0.5f, -0.5f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f,-1.0f,
 
-        -0.5f, 0.5f, 0.5f,       1.0f, 0.0f, 1.0f,      1.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f,       1.0f, 0.0f, 1.0f,      0.0f, 1.0f,
-        -0.5f, 0.5f, -0.5f,       1.0f, 0.0f, 1.0f,     1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,       1.0f, 0.0f, 1.0f,    0.0f, 0.0f,
+    // Левая грань (-X)
+    -0.5f,  0.5f,  0.5f,   0.2f, 0.0f, 1.0f,   1.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,   0.2f, 0.0f, 1.0f,   0.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,   0.2f, 0.0f, 1.0f,   1.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,   0.2f, 0.0f, 1.0f,   0.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
 
-        0.5f, -0.5f, 0.5f,       1.0f, 1.0f, 0.0f,      1.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f,       1.0f, 1.0f, 0.0f,      0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f,       1.0f, 1.0f, 0.0f,     1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,       1.0f, 1.0f, 0.0f,    0.0f, 0.0f,
-    };
+    // Нижняя грань (-Y)
+     0.5f, -0.5f,  0.5f,   0.0f, 0.6f, 0.2f,   1.0f, 1.0f,   0.0f,-1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,   0.0f, 0.6f, 0.2f,   0.0f, 1.0f,   0.0f,-1.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,   0.0f, 0.6f, 0.2f,   1.0f, 0.0f,   0.0f,-1.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,   0.0f, 0.6f, 0.2f,   0.0f, 0.0f,   0.0f,-1.0f, 0.0f,
+};
 
     unsigned int indices[] = {
         0, 1, 2,
@@ -220,9 +228,6 @@ int main(int argc, char * argv[]){
         21, 22, 23,
 
     };
-    #define MAX_CHUNKS_PER_AXIS 2
-    //chunk *** world = create_chunk_map(MAX_CHUNKS_PER_AXIS);
-    //configuration VBO
 
     unsigned int VBO, VAO, EBO, instanceVBO;
     glGenVertexArrays(1, &VAO);
@@ -246,19 +251,20 @@ int main(int argc, char * argv[]){
     glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(12 * sizeof(float)));
     glEnableVertexAttribArray(5);
     glVertexAttribDivisor(5, 1);
-
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     //set pointers
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11*sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11*sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 11*sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(6);
+    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 11*sizeof(float), (void*)(8 * sizeof(float)));
+    glEnableVertexAttribArray(7);
 
 
     unsigned int shaderProgram;
@@ -290,7 +296,7 @@ int main(int argc, char * argv[]){
     // set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // load and generate the texture
     int width, height, nrChannels;

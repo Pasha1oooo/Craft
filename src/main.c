@@ -1,39 +1,21 @@
+/* main.c */
+
 #include "../include/glad/glad.h"
-#include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <math.h>
-#include <unistd.h>
-#include "main.h"
-#include "generator.h"
-#include <cglm/cglm.h>
 #include <time.h>
+#include <unistd.h>
+#include <cglm/cglm.h>
+#include <GLFW/glfw3.h>
+#include "render.h"
+#include "generator.h"
 #include "shader.h"
+#include "render.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../external/stb/stb_image.h"
 
-typedef struct block{
-	unsigned char color[4];
-	char ascii;
-} block;
-
-typedef struct camera{
-	vec3 cameraPos;
-	vec3 cameraTarget;
-	vec3 cameraDirection;
-	vec3 up;
-	vec3 cameraRight;
-	vec3 cameraUp;
-} camera;
-
-typedef struct player{
-	camera head;
-	float x;
-	float y;
-	float z;
-	float speed;
-} player;
-
+/* ??? */
 #define BLOCKS_NUM 8
 
 const block blocks[BLOCKS_NUM] = {{{255, 255, 255, 255}, '#'},
@@ -45,26 +27,7 @@ const block blocks[BLOCKS_NUM] = {{{255, 255, 255, 255}, '#'},
                                   {{0  , 255, 0  , 255}, '&'},
                                   {{0  , 0  , 255, 255}, '!'}};
 
-void create_window(GLFWwindow ** window, int fb_width , int fb_height)
-{
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	*window = glfwCreateWindow(fb_width, fb_height, "Game Window",
-	                                                           NULL, NULL);
-	if (*window == NULL) {
-		printf("Failed to create a window\n");
-		glfwTerminate();
-	} else {
-		printf("Window created\n");
-	}
-
-	glfwMakeContextCurrent(*window);
-}
-
-mat4 * create_chunk(struct chunk chunk, int * num)
+mat4 *create_chunk(struct chunk chunk, int * num)
 {
 	int CUBES_PER_AXIS = 16;
 	int TOTAL_CUBES = CUBES_PER_AXIS * CUBES_PER_AXIS * CUBES_PER_AXIS;
@@ -94,40 +57,8 @@ mat4 * create_chunk(struct chunk chunk, int * num)
 	return modelMatrices;
 }
 
-camera create_camera()
-{
-	camera camera;
-
-	glm_vec3_copy((vec3){0.0f, 10.0f, 10.0f}, camera.cameraPos);
-	glm_vec3_copy((vec3){0.0f, -1.0f, 0.0f}, camera.cameraTarget);
-	glm_vec3_copy((vec3){0.0f, 0.0f, 0.0f}, camera.cameraDirection);
-	glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.up);
-	glm_vec3_sub(camera.cameraPos, camera.cameraTarget,
-	                                               camera.cameraDirection);
-	glm_vec3_normalize(camera.cameraDirection);
-	glm_cross(camera.up, camera.cameraDirection, camera.cameraRight);
-	glm_normalize(camera.cameraRight);
-	glm_cross(camera.cameraDirection, camera.cameraRight, camera.cameraUp);
-
-	return camera;
-}
-
-player create_player()
-{
-	player player;
-
-	player.head = create_camera();
-	player.x = 0;
-	player.y = 0;
-	player.z = 0;
-	player.speed = 0.3f;
-
-	return player;
-}
 int main(void)
 {
-	printf("Start\n");
-
 	GLFWwindow * window;
 	int fb_width = 2560, fb_height = 1600;
 
@@ -137,8 +68,6 @@ int main(void)
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
 		printf("Failed to initialize GLAD\n");
 		return 0;
-	} else {
-		printf("GLAD initialized\n");
 	}
 
 	float vertices[] = {
@@ -153,10 +82,10 @@ int main(void)
 	 0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 0.0f,        1.0f, 0.0f,
 	 0.5f, -0.5f, -0.5f,        0.0f, 1.0f, 0.0f,        0.0f, 0.0f,
 
-	 0.5f, 0.5f,  0.5f,         1.0f, 0.0f, 1.0f,        1.0f, 1.0f,
-	-0.5f, 0.5f,  0.5f,         1.0f, 0.0f, 1.0f,        0.0f, 1.0f,
-	 0.5f, 0.5f, -0.5f,         1.0f, 0.0f, 1.0f,        1.0f, 0.0f,
-	-0.5f, 0.5f, -0.5f,         1.0f, 0.0f, 1.0f,        0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 0.0f,
 
 	 0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        1.0f, 1.0f,
 	-0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        0.0f, 1.0f,

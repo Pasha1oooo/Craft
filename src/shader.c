@@ -25,6 +25,6 @@ char *get_shader(char *shader_path)
 	}
 
 	fread(shader, sizeof(char), fsize, file);
-	printf("%s\n", shader);
+
 	return shader;
 }

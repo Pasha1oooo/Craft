@@ -16,7 +16,7 @@ const char FILE_PATH[] = "saves/";
 struct chunk *init_chunks(void)
 {
 	const int SIDE = 2 * RENDER_DISTANCE - 1;
-	struct chunk *loaded_chunks = (struct chunk *)calloc((int)pow(SIDE, 3),
+	struct chunk *loaded_chunks = (struct chunk *)calloc((size_t)pow(SIDE, 3),
 	                                                 sizeof(struct chunk));
 
 	for (int i = 0; i < (int)pow(SIDE, 3); i++) {
@@ -110,6 +110,7 @@ void load_chunk(char *chunk_data, char *file_name)
 {
     size_t blocks_amount = (size_t)pow(CHUNK_SIZE, 3);
     FILE *file = fopen(file_name, "rb");
+
     if (file) {
         fread(chunk_data, sizeof(char), blocks_amount, file);
         fclose(file);
@@ -123,8 +124,7 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	int z = chunk_pos->z * CHUNK_SIZE + local_pos->z;
 	int result = ' ';
 
-	if (sin((float)x) + sin((float)y) + 4 <=
-	                                                            (float)z) {
+	if (sin((float)x) + sin((float)y) + 4 <= (float)z) {
 		result = '*';
 	}
 

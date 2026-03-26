@@ -123,6 +123,7 @@ int main(void)
 
 	#define MAX_CHUNKS_PER_AXIS 2
 
+
 	unsigned int VBO, VAO, EBO, instanceVBO;
 
 	glGenVertexArrays(1, &VAO);

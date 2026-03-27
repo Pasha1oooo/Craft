@@ -5,6 +5,57 @@
 #include <GLFW/glfw3.h>
 #include "render.h"
 
+float vertices[] = {
+/* coordinates                    color               texture */
+ 0.5f,  0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        1.0f, 1.0f,
+-0.5f,  0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        0.0f, 1.0f,
+ 0.5f, -0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        1.0f, 0.0f,
+-0.5f, -0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        0.0f, 0.0f,
+
+ 0.5f,  0.5f,  0.5f,        0.0f, 1.0f, 0.0f,        1.0f, 1.0f,
+ 0.5f, -0.5f,  0.5f,        0.0f, 1.0f, 0.0f,        0.0f, 1.0f,
+ 0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 0.0f,        1.0f, 0.0f,
+ 0.5f, -0.5f, -0.5f,        0.0f, 1.0f, 0.0f,        0.0f, 0.0f,
+
+ 0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 1.0f,
+-0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 1.0f,
+ 0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 0.0f,
+-0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 0.0f,
+
+ 0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        1.0f, 1.0f,
+-0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        0.0f, 1.0f,
+ 0.5f, -0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        1.0f, 0.0f,
+-0.5f, -0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        0.0f, 0.0f,
+
+-0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 1.0f,
+-0.5f, -0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 1.0f,
+-0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 0.0f,
+-0.5f, -0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 0.0f,
+
+ 0.5f, -0.5f,  0.5f,        1.0f, 1.0f, 0.0f,        1.0f, 1.0f,
+-0.5f, -0.5f,  0.5f,        1.0f, 1.0f, 0.0f,        0.0f, 1.0f,
+ 0.5f, -0.5f, -0.5f,        1.0f, 1.0f, 0.0f,        1.0f, 0.0f,
+-0.5f, -0.5f, -0.5f,        1.0f, 1.0f, 0.0f,        0.0f, 0.0f};
+
+unsigned int indices[] = {
+	0, 1, 2,
+	1, 2, 3,
+
+	4, 5, 6,
+	5, 6, 7,
+
+	8, 9, 10,
+	9, 10, 11,
+
+	12, 13, 14,
+	13, 14, 15,
+
+	16, 17, 18,
+	17, 18, 19,
+
+	20, 21, 22,
+	21, 22, 23};
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
@@ -65,12 +116,11 @@ player create_player(void)
 	player.x = 0;
 	player.y = 0;
 	player.z = 0;
-	player.speed = 0.5f;
+	player.speed = 1.1f;
 
 	return player;
 }
 
-/*
 void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
                             unsigned int *EBO, unsigned int * instanceVBO)
 {
@@ -117,4 +167,9 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
 
 }
 
-*/
+
+void glDraw(int num) /* TODO REMAKE */
+{
+	glDrawElementsInstanced(GL_TRIANGLES, sizeof(indices)/
+	                          sizeof(indices[0]), GL_UNSIGNED_INT, 0, num);
+}

@@ -29,12 +29,11 @@ typedef struct player{
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow * window);
 void create_window(GLFWwindow ** window, int fb_width , int fb_height);
+void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
+                            unsigned int *EBO, unsigned int * instanceVBO);
+void glDraw(int num); /* TODO REMAKE*/
 camera create_camera(void);
 player create_player(void);
 
-/*
-void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
-                            unsigned int *EBO, unsigned int * instanceVBO);
 
-*/
 #endif

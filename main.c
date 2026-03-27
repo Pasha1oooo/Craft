@@ -141,6 +141,7 @@ void print_block(unsigned char * pixels, float  pixels_depth){
     }
 }
 
+
 camera create_camera(){
     camera camera;
     glm_vec3_copy((vec3){0.0f, 10.0f, 10.0f}, camera.cameraPos);

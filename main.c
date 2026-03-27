@@ -78,9 +78,9 @@ const block blocks[BLOCKS_NUM] = {{{255,255,255,255}, '#'},
                                   {{255,0,255,255}, '`'},
                                   {{255,255,0,255}, '-'},
                                   {{0,255,255,255}, '@'},
-                                  {{255,0,0,255}, '+'},
+                                  {{255,0,0,255}, '#'},
                                   {{0,255,0,255}, '&'},
-                                  {{0,0,255}, '!'},
+                                  {{0,0,255}, '.'},
                                   };
 void create_window(GLFWwindow ** window, int fb_width , int fb_height){
     glfwInit();
@@ -126,14 +126,26 @@ mat4 * create_chunk(struct chunk chunk, int * num){
     return modelMatrices;
 }
 
-//chunk *** create_chunk_map(int MAX_CHUNKS_PER_AXIS){
-//    calloc(pow(MAX_CHUNKS_PER_AXIS, 3), sizeof(chunk));
-//}
+void print_block(unsigned char * pixels, float  pixels_depth){
+    char color[4];
+                           //far smooth  //distance
+    int gray = (int)(255 * (2/exp(110 - 110*pixels_depth)));
+    if (gray < 0) gray = 0;
+    //intensive
+    if (gray > 200) gray = 200;
+    for( int i = 0; i < 4; i++) color[i] = pixels[i];
+    for( int i = 0; i < BLOCKS_NUM; i++){
+        if (color[0] == blocks[i].color[0] && color[1] == blocks[i].color[1] && color[2] == blocks[i].color[2]){
+            printf("\033[1;48;2;%d;%d;%dm%c\033[0m", gray, gray, gray, blocks[i].ascii);
+        }
+    }
+}
+
 camera create_camera(){
     camera camera;
     glm_vec3_copy((vec3){0.0f, 10.0f, 10.0f}, camera.cameraPos);
     glm_vec3_copy((vec3){0.0f, -1.0f, 0.0f}, camera.cameraTarget);
-    glm_vec3_copy((vec3){0.0f, 0.0f, 0.0f}, camera.cameraDirection);
+    glm_vec3_copy((vec3){0.0f, 0.0f, -1.0f}, camera.cameraDirection);
     glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.up);
     glm_vec3_sub(camera.cameraPos, camera.cameraTarget, camera.cameraDirection);
     glm_vec3_normalize(camera.cameraDirection);
@@ -151,11 +163,13 @@ player create_player(){
     player.speed = 0.1f;
     return player;
 }
+
 int main(int argc, char * argv[]){
     printf("Start\n");
 
     GLFWwindow * window;
-    int fb_width = 2560, fb_height = 1600;
+    int fb_width = 480, fb_height = 90;
+    //int fb_width = 2560, fb_height = 1600;
     create_window(&window, fb_width , fb_height);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -290,7 +304,7 @@ int main(int argc, char * argv[]){
     // set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // load and generate the texture
     int width, height, nrChannels;
@@ -314,6 +328,12 @@ int main(int argc, char * argv[]){
     unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
     unsigned int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
+    size_t pixel_count = fb_width * fb_height;
+    size_t data_size = pixel_count * 4;
+    unsigned char * pixels = (unsigned char*)calloc(data_size, sizeof(char));
+    float * pixels_depth = (float*)calloc(fb_width * fb_height , sizeof(float));
+    char * buffer = calloc(data_size, sizeof(char));
+
     mat4 view = GLM_MAT4_IDENTITY_INIT;
 
     player player = create_player();
@@ -325,7 +345,7 @@ int main(int argc, char * argv[]){
         frame_start = glfwGetTime();
         processInput(window);
         glEnable(GL_DEPTH_TEST);
-        glClearColor(0.0f, 0.2f, 0.4f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //////////////////////////////////////////////////////////////////////
 
@@ -336,19 +356,21 @@ int main(int argc, char * argv[]){
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) player.y += player.speed;
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) player.y -= player.speed;
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) player.x += player.speed;
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) player.x -= player.speed;
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) player.x -= player.speed;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) player.x += player.speed;
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) player.z -= player.speed;
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) player.z += player.speed;
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) glm_vec3_add(player.head.cameraDirection, (vec3){0,0.1,0.1}, player.head.cameraDirection);
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) glm_vec3_add(player.head.cameraDirection, (vec3){0,-0.1,-0.1}, player.head.cameraDirection);
 
         glm_vec3_copy((vec3){player.x, player.y, player.z}, player.head.cameraPos);
         vec3 target;
-        glm_vec3_add(player.head.cameraPos, (vec3){0,0,1}, target);
+        glm_vec3_add(player.head.cameraPos, player.head.cameraDirection, target);
         glm_lookat(player.head.cameraPos, target, player.head.cameraUp, view);
         //glm_lookat((vec3){5.0f, 5.0f, 5.0f}, (vec3){0.0f, 0.0f, 0.0f}, player.head.cameraUp, view);
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
         mat4 projection;
-        glm_perspective(glm_rad(90.0f), (float)fb_width / (fb_height+150), 0.1f, 10000.0f, projection);
+        glm_perspective(glm_rad(90.0f), (float)fb_width / (fb_height+150), 0.1f, 1000.0f, projection);
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (float*)projection);
 
 
@@ -367,8 +389,17 @@ int main(int argc, char * argv[]){
         }
         deinit_chunks(loaded_chunks);
         glfwSwapBuffers(window);
-
-
+        glReadBuffer(GL_BACK);
+        glReadPixels(0, 0, fb_width, fb_height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glReadPixels(0, 0, fb_width, fb_height, GL_DEPTH_COMPONENT, GL_FLOAT, pixels_depth);
+        for (int y = fb_height - 1; y >= 0; y--) {
+            for (int x = 0; x < fb_width; x++) {
+                int idx = (y * fb_width + x) * 4;
+                float depth = pixels_depth[y * fb_width + x];
+                print_block(pixels + idx, depth);
+            }
+            printf("\n");
+        }
 //////////////////////////////////////////////////////////////////////
 
         glfwPollEvents();

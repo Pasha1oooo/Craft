@@ -1,6 +1,8 @@
+/* shader.c */
+
+#include "../include/glad/glad.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "../include/glad/glad.h"
 
 char *get_shader(char *shader_path)
 {
@@ -30,7 +32,7 @@ char *get_shader(char *shader_path)
 	return shader;
 }
 
-unsigned int prepare_shaders(void)
+unsigned int prepare_shaders(void) // TODO
 {
 	unsigned int shaderProgram;
 

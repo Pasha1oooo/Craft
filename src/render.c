@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include "render.h"
 
+// Separate it into parts to optimize render
 float vertices[] = {
 /* coordinates                    color               texture */
  0.5f,  0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        1.0f, 1.0f,
@@ -37,6 +38,7 @@ float vertices[] = {
  0.5f, -0.5f, -0.5f,        1.0f, 1.0f, 0.0f,        1.0f, 0.0f,
 -0.5f, -0.5f, -0.5f,        1.0f, 1.0f, 0.0f,        0.0f, 0.0f};
 
+// figure out what to do with it
 unsigned int indices[] = {
 	0, 1, 2,
 	1, 2, 3,
@@ -56,17 +58,47 @@ unsigned int indices[] = {
 	20, 21, 22,
 	21, 22, 23};
 
+void calculate_fps(struct time *time)
+{
+	float delta_time;
+
+	time->end = glfwGetTime();
+	delta_time = time->end - time->start;
+	time->frame_counter += 1;
+
+	if (delta_time > FPS_COUNT_TIME_INTERVAL) {
+		time->fps = (int)((float)time->frame_counter / delta_time);
+		time->start = glfwGetTime();
+		time->frame_counter = 0;
+
+		printf("\033[H");
+		printf("\nFPS: %d \n", time->fps);
+	}
+}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow * window)
+void processInput(GLFWwindow * window, struct player *player) // add other hotkeys here
 {
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
 		printf("ESC\n");
 		glfwSetWindowShouldClose(window, 1);
 	}
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) // into move_player
+		player->y += player->speed;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		player->y -= player->speed;
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		player->x += player->speed;
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		player->x -= player->speed;
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		player->z -= player->speed;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+		player->z += player->speed;
 
 	return;
 }
@@ -83,16 +115,16 @@ void create_window(GLFWwindow ** window, int fb_width , int fb_height)
 	if (*window == NULL) {
 		printf("Failed to create a window\n");
 		glfwTerminate();
-	} else {
-		printf("Window created\n");
 	}
 
 	glfwMakeContextCurrent(*window);
+
+	return;
 }
 
-camera create_camera(void)
+struct camera create_camera(void) // TODO
 {
-	camera camera;
+	struct camera camera;
 
 	glm_vec3_copy((vec3){0.0f, 10.0f, 10.0f}, camera.cameraPos);
 	glm_vec3_copy((vec3){0.0f, -1.0f, 0.0f}, camera.cameraTarget);
@@ -108,21 +140,22 @@ camera create_camera(void)
 	return camera;
 }
 
-player create_player(void)
+struct player create_player(void)
 {
-	player player;
+	struct player player;
 
 	player.head = create_camera();
 	player.x = 0;
 	player.y = 0;
 	player.z = 0;
 	player.speed = 1.1f;
+	player.rotation_speed = 0.1f;
 
 	return player;
 }
 
 void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
-                            unsigned int *EBO, unsigned int * instanceVBO)
+                            unsigned int *EBO, unsigned int * instanceVBO) // TODO
 {
 	glGenVertexArrays(1, VAO);
 	glGenBuffers(1, EBO);
@@ -167,9 +200,20 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
 
 }
 
-
-void glDraw(int num) /* TODO REMAKE */
+void glDraw(int num) // TODO
 {
 	glDrawElementsInstanced(GL_TRIANGLES, sizeof(indices)/
 	                          sizeof(indices[0]), GL_UNSIGNED_INT, 0, num);
+}
+
+void deinit_gl_environment(unsigned int *VAO, unsigned int *instanceVBO,
+              unsigned int *VBO, unsigned int *EBO, unsigned int shaderProgram)
+{
+	glDeleteVertexArrays(1, VAO);
+	glDeleteBuffers(1, instanceVBO);
+	glDeleteBuffers(1, VBO);
+	glDeleteBuffers(1, EBO);
+	glDeleteProgram(shaderProgram);
+
+	glfwTerminate();
 }

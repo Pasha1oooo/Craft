@@ -1,10 +1,12 @@
-#include "../include/glad/glad.h"
-#include <stdio.h>
+/* texture.c */
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "../external/stb/stb_image.h"
 
-void prepare_texture(unsigned int *texture)
+#include "../include/glad/glad.h"
+#include "../external/stb/stb_image.h"
+#include <stdio.h>
+
+void prepare_texture(unsigned int *texture) // TODO
 {
 	glGenTextures(1, texture);
 	glBindTexture(GL_TEXTURE_2D, *texture);

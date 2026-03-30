@@ -8,7 +8,7 @@
 #include <cglm/cglm.h>
 
 const int CHUNK_SIZE = 16;
-const int RENDER_DISTANCE = 2;
+const int RENDER_DISTANCE = 3;
 const int CHUNK_NAME_LEN = 64;
 const char CHUNK_FILENAME_EXTENSION[] = ".chunk";
 const char FILE_PATH[] = "saves/";
@@ -129,7 +129,7 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	int result = ' ';
 	vec3 point, biome_point;
 	float perlin_value, biome_value;
-
+/*
 	point[0] = x / 20.0f;
 	point[1] = y / 20.0f;
 	point[2] = z / 20.0f;
@@ -137,14 +137,28 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	biome_point[0] = x / 200.0f;
 	biome_point[1] = y / 200.0f;
 	biome_point[2] = z / 200.0f;
+*/
+
+	point[0] = x / 20.0f;
+	point[1] = y / 20.0f;
+	point[2] = z / 10.0f;
+
+	biome_point[0] = x / 200.0f;
+	biome_point[1] = y / 200.0f;
+	biome_point[2] = z / 100.0f;
 
 	perlin_value = glm_perlin_vec3(point);
 	biome_value = glm_perlin_vec3(biome_point);
 
+
 	if ((perlin_value + 1.0f) * (biome_value + 1.0f) / 4.0f <= 0.25f) {
 		result = '*';
 	}
-
+	/*
+	if ((perlin_value + 1.0f) * (biome_value + 1.0f) / 4.0f <= 0.25f) {
+		result = '*';
+	}
+*/
 	return result;
 }
 

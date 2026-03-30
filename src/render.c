@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <GLFW/glfw3.h>
 #include "render.h"
+#include "generator.h"
 
 // Separate it into parts to optimize render
 float vertices[] = {
@@ -57,6 +58,30 @@ unsigned int indices[] = {
 
 	20, 21, 22,
 	21, 22, 23};
+
+
+int is_chunk_changed(vec3 player_pos, vec3 prev_chunk) //2ptr
+{
+	int is_chunk_changed[3];
+	int current_chunk[3];
+	int is_changed = 0;
+
+	current_chunk[0] = (int)player_pos[0] / CHUNK_SIZE;
+	current_chunk[1] = (int)player_pos[1] / CHUNK_SIZE;
+	current_chunk[2] = (int)player_pos[2] / CHUNK_SIZE;
+
+
+	is_chunk_changed[0] = player_pos[0] > 0 ? current_chunk[0] !=
+	                 prev_chunk[0] : current_chunk[0] - 1 != prev_chunk[0];
+	is_chunk_changed[1] = player_pos[1] > 0 ? current_chunk[1] !=
+	                 prev_chunk[1] : current_chunk[1] - 1 != prev_chunk[1];
+	is_chunk_changed[2] = player_pos[2] > 0 ? current_chunk[2] !=
+	                 prev_chunk[2] : current_chunk[2] - 1 != prev_chunk[2];
+
+	is_changed = is_chunk_changed[0] || is_chunk_changed[1] ||
+	                                                   is_chunk_changed[2];
+	return is_changed;
+}
 
 void calculate_fps(struct time *time)
 {
@@ -148,8 +173,8 @@ struct player create_player(void)
 	player.x = 0;
 	player.y = 0;
 	player.z = 0;
-	player.speed = 1.1f;
-	player.rotation_speed = 0.1f;
+	player.speed = 0.2f;
+	player.rotation_speed = 0.2f;
 
 	return player;
 }

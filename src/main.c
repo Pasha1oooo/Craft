@@ -65,6 +65,8 @@ int main(void)
 	vec3 player_pos, target;
 	mat4 view = GLM_MAT4_IDENTITY_INIT;
 
+	vec3 saved_chunk_pos = {0.0f, 0.0f, 0.0f};
+
 	create_window(&window, FB_WIDTH, FB_HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -114,7 +116,17 @@ int main(void)
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
 		                                           (float*)projection);
 
-		get_chunks(loaded_chunks, player.head.cameraPos);
+		if (is_chunk_changed(player.head.cameraPos, saved_chunk_pos)) {
+			get_chunks(loaded_chunks, player.head.cameraPos);
+
+			saved_chunk_pos[0] = player.head.cameraPos[0] > 0 ? (int)player.head.cameraPos[0] / CHUNK_SIZE :
+		                                         (int)player.head.cameraPos[0] / CHUNK_SIZE - 1;
+			saved_chunk_pos[1] = player.head.cameraPos[1] > 0 ? (int)player.head.cameraPos[1] / CHUNK_SIZE :
+		                                         (int)player.head.cameraPos[1] / CHUNK_SIZE - 1;
+			saved_chunk_pos[2] = player.head.cameraPos[2] > 0 ? (int)player.head.cameraPos[2] / CHUNK_SIZE :
+		                                         (int)player.head.cameraPos[2] / CHUNK_SIZE - 1;
+		}
+
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 // <<<
 

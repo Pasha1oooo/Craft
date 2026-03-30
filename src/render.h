@@ -40,6 +40,7 @@ struct time {
 	int fps;
 };
 
+int is_chunk_changed(vec3 player_pos, vec3 prev_chunk);
 void calculate_fps(struct time *time);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow * window, struct player *player);

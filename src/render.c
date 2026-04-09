@@ -1,10 +1,24 @@
 /* render.c */
+/*
+#include "../include/glad/glad.h"
+#include "render.h"
+#include <stdio.h>
+#include <cglm/cglm.h>
+#include <GLFW/glfw3.h>
+#include "generator.h"
+*/
+
+
 
 #include "../include/glad/glad.h"
 #include <stdio.h>
+#include <math.h>
+#include <unistd.h>
+#include <cglm/cglm.h>
 #include <GLFW/glfw3.h>
-#include "render.h"
 #include "generator.h"
+#include "render.h"
+#include "render.h"
 
 // Separate it into parts to optimize render
 float vertices[] = {
@@ -59,6 +73,33 @@ unsigned int indices[] = {
 	20, 21, 22,
 	21, 22, 23};
 
+mat4 *draw_chunk(struct chunk *chunk, int *num)
+{
+	int TOTAL_CUBES = pow(CHUNK_SIZE, 3);
+	mat4 *modelMatrices = (mat4 *)calloc(TOTAL_CUBES, sizeof(mat4));
+	int idx = 0;
+
+	for (int i = 0; i < TOTAL_CUBES; i++, idx++) {
+		if (chunk->chunk_data[i] == '*'){
+			mat4 model = GLM_MAT4_IDENTITY_INIT;
+			vec3 offset;
+
+			offset[0] = (float)(chunk->pos->x * CHUNK_SIZE +
+			                                     (i % CHUNK_SIZE));
+			offset[1] = (float)(chunk->pos->y * CHUNK_SIZE +
+			                        (i / CHUNK_SIZE) % CHUNK_SIZE);
+			offset[2] = (float)(chunk->pos->z * CHUNK_SIZE +
+			                        (i / CHUNK_SIZE) / CHUNK_SIZE);
+
+			glm_translate(model, offset);
+			glm_mat4_copy(model, modelMatrices[idx]);
+		}
+	}
+
+	*num = idx;
+
+	return modelMatrices;
+}
 
 int is_chunk_changed(vec3 player_pos, vec3 prev_chunk) //2ptr
 {
@@ -70,13 +111,23 @@ int is_chunk_changed(vec3 player_pos, vec3 prev_chunk) //2ptr
 	current_chunk[1] = (int)player_pos[1] / CHUNK_SIZE;
 	current_chunk[2] = (int)player_pos[2] / CHUNK_SIZE;
 
+	if (player_pos[0] > 0) {
+		is_chunk_changed[0] = current_chunk[0] != prev_chunk[0];
+	} else {
+		is_chunk_changed[0] = current_chunk[0] - 1 != prev_chunk[0];
+	}
 
-	is_chunk_changed[0] = player_pos[0] > 0 ? current_chunk[0] !=
-	                 prev_chunk[0] : current_chunk[0] - 1 != prev_chunk[0];
-	is_chunk_changed[1] = player_pos[1] > 0 ? current_chunk[1] !=
-	                 prev_chunk[1] : current_chunk[1] - 1 != prev_chunk[1];
-	is_chunk_changed[2] = player_pos[2] > 0 ? current_chunk[2] !=
-	                 prev_chunk[2] : current_chunk[2] - 1 != prev_chunk[2];
+	if (player_pos[1] > 0) {
+		is_chunk_changed[1] = current_chunk[1] != prev_chunk[1];
+	} else {
+		is_chunk_changed[1] = current_chunk[1] - 1 != prev_chunk[1];
+	}
+
+	if (player_pos[2] > 0) {
+		is_chunk_changed[2] = current_chunk[2] != prev_chunk[2];
+	} else {
+		is_chunk_changed[2] = current_chunk[2] - 1!= prev_chunk[2];
+	}
 
 	is_changed = is_chunk_changed[0] || is_chunk_changed[1] ||
 	                                                   is_chunk_changed[2];
@@ -108,10 +159,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void processInput(GLFWwindow * window, struct player *player) // add other hotkeys here
 {
-	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
-		printf("ESC\n");
+	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, 1);
-	}
+
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) // into move_player
 		player->y += player->speed;
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -120,6 +170,7 @@ void processInput(GLFWwindow * window, struct player *player) // add other hotke
 		player->x += player->speed;
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		player->x -= player->speed;
+
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
 		player->z -= player->speed;
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)

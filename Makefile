@@ -17,6 +17,7 @@ CXXFLAGS = -g -lm -D _DEBUG -ggdb3 -O0 -Wall -Wextra \
 SRC_DIR = src
 OBJ_DIR = obj
 BIN_DIR = bin
+SAVES_DIR = saves
 
 # Исходные файлы
 SOURCES = $(wildcard $(SRC_DIR)/*.c)
@@ -38,6 +39,7 @@ all: $(TARGET)
 
 # Линковка
 $(TARGET): $(OBJECTS) | $(BIN_DIR)
+	mkdir -p $(SAVES_DIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 # Компиляция
@@ -59,7 +61,7 @@ run: $(TARGET)
 
 # Очистка
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	rm -rf $(OBJ_DIR) $(BIN_DIR) $(SAVES_DIR)
 	@echo "Cleaned build artifacts"
 
 # Подключение автоматических зависимостей

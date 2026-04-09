@@ -1,12 +1,15 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include "../include/glad/glad.h"
 #include <cglm/cglm.h>
 #include <GLFW/glfw3.h>
 
 enum render_parameters {
-	FB_WIDTH = 2560,
-	FB_HEIGHT = 1600,
+//	FB_WIDTH = 2560,
+//	FB_HEIGHT = 1600,
+	FB_WIDTH = 500,
+	FB_HEIGHT = 150,
 	FPS_COUNT_TIME_INTERVAL = 3
 };
 
@@ -40,6 +43,7 @@ struct time {
 	int fps;
 };
 
+mat4 *draw_chunk(struct chunk *chunk, int *num);
 int is_chunk_changed(vec3 player_pos, vec3 prev_chunk);
 void calculate_fps(struct time *time);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);

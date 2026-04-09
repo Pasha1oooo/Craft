@@ -82,18 +82,26 @@ void get_chunks(struct chunk *chunks, vec3 player_vector_pos)
 void gen_chunk(struct chunk *chunk)
 {
 	struct position local_pos;
-	//char *chunk_file_name = get_chunk_name(chunk->pos);
-	//FILE *chunk_file = fopen(chunk_file_name, "rb");
+	char *chunk_file_name = get_chunk_name(chunk->pos);
+	FILE *chunk_file = fopen(chunk_file_name, "rb");
 	char ch = 0;
 
+	if (chunk_file) {
+		load_chunk(chunk->chunk_data, chunk_file);
+		fclose(chunk_file);
+	} else {
 
-	for (int i = 0; i < (int)pow(CHUNK_SIZE, 3); i++) {
-		local_pos.x = (i % CHUNK_SIZE);
-		local_pos.y = (i / CHUNK_SIZE) % CHUNK_SIZE;
-		local_pos.z = (i / CHUNK_SIZE) / CHUNK_SIZE;
-		ch = chunk_gen_logic(chunk->pos, &local_pos);
-		chunk->chunk_data[i] = ch;
+		for (int i = 0; i < (int)pow(CHUNK_SIZE, 3); i++) {
+			local_pos.x = (i % CHUNK_SIZE);
+			local_pos.y = (i / CHUNK_SIZE) % CHUNK_SIZE;
+			local_pos.z = (i / CHUNK_SIZE) / CHUNK_SIZE;
+			ch = chunk_gen_logic(chunk->pos, &local_pos);
+			chunk->chunk_data[i] = ch;
+		}
+
+		save_chunk(chunk->chunk_data, chunk_file_name);
 	}
+
 	return;
 }
 
@@ -105,20 +113,15 @@ void save_chunk(char *chunk_data, char *file_name)
 	fwrite(chunk_data, sizeof(char), blocks_amount, file);
 	fclose(file);
 
-	printf("Chunk [%s] was generated\n", file_name);
-
 	return;
 }
 
-void load_chunk(char *chunk_data, char *file_name)
+void load_chunk(char *chunk_data, FILE *file)
 {
-    size_t blocks_amount = (size_t)pow(CHUNK_SIZE, 3);
-    FILE *file = fopen(file_name, "rb");
+	size_t blocks_amount = (size_t)pow(CHUNK_SIZE, 3);
 
-    if (file) {
-        fread(chunk_data, sizeof(char), blocks_amount, file);
-        fclose(file);
-    }
+	if (file)
+		fread(chunk_data, sizeof(char), blocks_amount, file);
 }
 
 char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
@@ -150,15 +153,10 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	perlin_value = glm_perlin_vec3(point);
 	biome_value = glm_perlin_vec3(biome_point);
 
+	if ((perlin_value + 1.0f) * (biome_value + 1.0f) / 4.0f <= 0.25f) {
+		result = '*';
+	}
 
-	if ((perlin_value + 1.0f) * (biome_value + 1.0f) / 4.0f <= 0.25f) {
-		result = '*';
-	}
-	/*
-	if ((perlin_value + 1.0f) * (biome_value + 1.0f) / 4.0f <= 0.25f) {
-		result = '*';
-	}
-*/
 	return result;
 }
 

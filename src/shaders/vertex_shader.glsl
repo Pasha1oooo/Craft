@@ -12,6 +12,7 @@ out vec3 color;
 out vec2 TexCoord;
 uniform mat4 view;
 uniform mat4 projection;
+
 void main()
 {
 	mat4 model = mat4(aInstanceCol0, aInstanceCol1, aInstanceCol2,

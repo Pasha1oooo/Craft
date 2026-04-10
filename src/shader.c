@@ -32,7 +32,7 @@ char *get_shader(char *shader_path)
 	return shader;
 }
 
-unsigned int prepare_shaders(void) // TODO
+unsigned int prepare_shaders(void)
 {
 	unsigned int shaderProgram;
 
@@ -57,6 +57,7 @@ unsigned int prepare_shaders(void) // TODO
 	glAttachShader(shaderProgram, vertexShader);
 	glAttachShader(shaderProgram, fragmentShader);
 	glLinkProgram(shaderProgram);
+
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 

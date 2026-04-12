@@ -127,3 +127,34 @@ struct player create_player(void)
 
 	return player;
 }
+
+int select_block(struct player player, struct chunk chunk, int *selected_block_x, int *selected_block_y, int *selected_block_z) {
+    vec3 dir;
+    glm_vec3_copy(player.head.cameraDirection, dir);
+    glm_vec3_normalize(dir);
+
+    vec3 step;
+    glm_vec3_scale(dir, 0.1f, step);
+
+    vec3 current;
+    glm_vec3_copy(player.head.cameraPos, current);
+
+    int local_x,local_y,local_z;
+    for(float i = 0; i < 1; i+=1){
+		glm_vec3_add(current, step, current);
+
+
+        local_x = current[0] - chunk.pos->x * 16 ;  // x = chunk_x + local_x  x = dir_x + player_x
+        local_y = current[1] - chunk.pos->y * 16 ;
+        local_z = current[2] - chunk.pos->z * 16 ;
+        if(chunk.chunk_data[((int)local_x) + ((int)local_y)*16 + ((int)local_z)*16*16] == '*'){
+            *selected_block_x = chunk.pos->x * 16 + local_x;
+            *selected_block_y = chunk.pos->y * 16 + local_y;
+            *selected_block_z = chunk.pos->z * 16 + local_z;
+            return 1;
+        }
+    }
+    return -1;
+}
+
+

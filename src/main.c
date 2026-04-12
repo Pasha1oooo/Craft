@@ -23,7 +23,8 @@ int main(void)
 	struct position saved_chunk_pos = {.x = 0, .y = 0, .z = 0};
 	unsigned int modelLoc, viewLoc, projectionLoc; // modelLoc?
 	unsigned int VBO, VAO, EBO, instanceVBO;
-	unsigned int shaderProgram, texture;
+	unsigned int VBO_highlight, VAO_highlight, EBO_highlight;
+	unsigned int shaderProgram, shaderProgram2, texture, texture2;
 	vec3 player_pos, target;
 	mat4 view = GLM_MAT4_IDENTITY_INIT;
 	struct time time;
@@ -38,9 +39,12 @@ int main(void)
 		return 0;
 	}
 
-	prepare_gl_environment(&VBO, &VAO, &EBO, &instanceVBO);
-	prepare_texture(&texture);
+	prepare_gl_environment(&VBO, &VAO, &EBO, &instanceVBO, &VBO_highlight, &VAO_highlight, &EBO_highlight);
+
+	prepare_texture(&texture, "a.png");
+	prepare_texture(&texture2, "cat.png");
 	shaderProgram = prepare_shaders();
+	shaderProgram2 = prepare_shaders2();
 
 	modelLoc = glGetUniformLocation(shaderProgram, "model");
 	viewLoc = glGetUniformLocation(shaderProgram, "view");
@@ -86,6 +90,25 @@ int main(void)
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 
 		render_chunks(loaded_chunks, texture, VAO);
+		glm_vec3_copy((vec3){player.x, player.y, player.z},player.head.cameraPos);
+		int selected_block_x = -1, selected_block_y = -1, selected_block_z = -1;
+        for (int i = 0; i < (int)pow(2 * RENDER_DISTANCE - 1, 3); i++) {
+            if (select_block(player, loaded_chunks[i], &selected_block_x, &selected_block_y, &selected_block_z)) {
+                break;
+            }
+		}
+        if (selected_block_x != -1) {
+            glUseProgram(shaderProgram2);
+            glUniformMatrix4fv(glGetUniformLocation(shaderProgram2, "view"), 1, GL_FALSE, (float*)view);
+            glUniformMatrix4fv(glGetUniformLocation(shaderProgram2, "projection"), 1, GL_FALSE, (float*)projection);
+            mat4 model_highlight = GLM_MAT4_IDENTITY_INIT;
+            glm_translate(model_highlight, (vec3){selected_block_x , selected_block_y, selected_block_z});
+            glUniformMatrix4fv(glGetUniformLocation(shaderProgram2, "model"), 1, GL_FALSE, (float*)model_highlight);
+            glBindVertexArray(VAO_highlight);
+            glBindTexture(GL_TEXTURE_2D, texture2);
+            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+            glUseProgram(shaderProgram); // возвращаемся к основному шейдеру для следующего кадра
+        }
 
 		glfwSwapBuffers(window);
 		glReadBuffer(GL_BACK);

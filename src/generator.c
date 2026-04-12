@@ -1,14 +1,14 @@
 /* generation.c */
 
+#include "generator.h"
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "generator.h"
 #include <cglm/cglm.h>
 
 const int CHUNK_SIZE = 16;
-const int RENDER_DISTANCE = 4;
+const int RENDER_DISTANCE = 2;
 const int CHUNK_NAME_LEN = 64;
 const char CHUNK_FILENAME_EXTENSION[] = ".chunk";
 const char FILE_PATH[] = "saves/";

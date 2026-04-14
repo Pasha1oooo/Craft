@@ -1,10 +1,10 @@
 /* generation.c */
 
+#include "generator.h"
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "generator.h"
 #include <cglm/cglm.h>
 
 const int CHUNK_SIZE = 16;

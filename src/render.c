@@ -68,7 +68,52 @@ unsigned int indices[] = {
 
 	20, 21, 22,
 	21, 22, 23};
+float vertices2[] = {
+    // Передняя грань
+     0.55f,  0.55f,  0.55f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+    -0.55f,  0.55f,  0.55f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+     0.55f, -0.55f,  0.55f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+    -0.55f, -0.55f,  0.55f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
 
+    // Правая грань
+     0.55f,  0.55f,  0.55f,   0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+     0.55f, -0.55f,  0.55f,   0.0f, 1.0f, 0.0f,   0.0f, 1.0f,
+     0.55f,  0.55f, -0.55f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+     0.55f, -0.55f, -0.55f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+
+    // Верхняя грань
+     0.55f,  0.55f,  0.55f,   1.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+    -0.55f,  0.55f,  0.55f,   1.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+     0.55f,  0.55f, -0.55f,   1.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+    -0.55f,  0.55f, -0.55f,   1.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+
+    // Задняя грань
+     0.55f,  0.55f, -0.55f,   0.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+    -0.55f,  0.55f, -0.55f,   0.0f, 1.0f, 1.0f,   0.0f, 1.0f,
+     0.55f, -0.55f, -0.55f,   0.0f, 1.0f, 1.0f,   1.0f, 0.0f,
+    -0.55f, -0.55f, -0.55f,   0.0f, 1.0f, 1.0f,   0.0f, 0.0f,
+
+    // Левая грань
+    -0.55f,  0.55f,  0.55f,   1.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+    -0.55f, -0.55f,  0.55f,   1.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+    -0.55f,  0.55f, -0.55f,   1.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+    -0.55f, -0.55f, -0.55f,   1.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+
+    // Нижняя грань
+     0.55f, -0.55f,  0.55f,   1.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+    -0.55f, -0.55f,  0.55f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,
+     0.55f, -0.55f, -0.55f,   1.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+    -0.55f, -0.55f, -0.55f,   1.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+};
+
+unsigned int indices2[] = {
+        0, 1, 2,  1, 2, 3,
+        4, 5, 6,  5, 6, 7,
+        8, 9,10,  9,10,11,
+        12,13,14, 13,14,15,
+        16,17,18, 17,18,19,
+        20,21,22, 21,22,23
+    };
 void create_window(GLFWwindow **window, int fb_width , int fb_height)
 {
 	glfwInit();
@@ -93,8 +138,8 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
-                            unsigned int *EBO, unsigned int *instanceVBO)
+
+void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO, unsigned int *EBO, unsigned int *instanceVBO, unsigned int *VBO_highlight, unsigned int *VAO_highlight, unsigned int *EBO_highlight)
 {
 	glGenVertexArrays(1, VAO);
 	glGenBuffers(1, EBO);
@@ -136,6 +181,20 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
 	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
 	                                          (void *)(6 * sizeof(float)));
 	glEnableVertexAttribArray(6);
+	glGenVertexArrays(1, VAO_highlight);
+    glGenBuffers(1, VBO_highlight);
+    glGenBuffers(1, EBO_highlight);
+    glBindVertexArray(*VAO_highlight);
+    glBindBuffer(GL_ARRAY_BUFFER, *VBO_highlight);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO_highlight);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices2), indices2, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
+    glEnableVertexAttribArray(6);
 
 	return;
 }
@@ -154,7 +213,6 @@ void render_chunks(struct chunk *chunks, unsigned int texture,
 		glBindVertexArray(VAO);
 		glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4),
 		                                modelMatrices, GL_STATIC_DRAW);
-
 		glDrawElementsInstanced(GL_TRIANGLES,
 		                        sizeof(indices) / sizeof(indices[0]),
 		                        GL_UNSIGNED_INT, 0, block_amount);

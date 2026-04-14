@@ -16,7 +16,7 @@ void save_chunk_pos(vec3 *player_pos, struct position *chunk_pos)
 	if ((*player_pos)[0] < 0.0f)
 		chunk_pos->x--;
 	if ((*player_pos)[1] < 0.0f)
-		chunk_pos->x--;
+		chunk_pos->y--;
 	if ((*player_pos)[2] < 0.0f)
 		chunk_pos->z--;
 
@@ -74,7 +74,7 @@ void calculate_fps(struct time *time)
 	}
 }
 
-void processInput(GLFWwindow * window, struct player *player)
+void processInput(GLFWwindow * window, struct player *player, struct chunk **chunks, struct position selected_block)
 {
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, 1);
@@ -92,8 +92,24 @@ void processInput(GLFWwindow * window, struct player *player)
 		player->z -= player->speed;
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		player->z += player->speed;
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+	    if (selected_block.x == -1) return;
 
-	return;
+	    int chank_x = floor(selected_block.x / 16.0f);
+	    int chank_y = floor(selected_block.y / 16.0f);
+	    int chank_z = floor(selected_block.z / 16.0f);
+	    int local_x = selected_block.x - chank_x * 16;
+	    int local_y = selected_block.y - chank_y * 16;
+	    int local_z = selected_block.z - chank_z * 16;
+
+	    for (int i = 0; i < (int)pow(2 * RENDER_DISTANCE - 1, 3); i++) {
+	        if ((*chunks)[i].pos->x == chank_x && (*chunks)[i].pos->y == chank_y && (*chunks)[i].pos->z == chank_z) {
+	            (*chunks)[i].chunk_data[local_x + local_y * 16 + local_z * 256] = ' ';
+				save_chunk((*chunks)[i].chunk_data, get_chunk_name((*chunks)[i].pos));
+	            break;
+	        }
+	    }
+	}
 }
 
 struct camera create_camera(void) // TODO
@@ -101,8 +117,8 @@ struct camera create_camera(void) // TODO
 	struct camera camera;
 
 	glm_vec3_copy((vec3){0.0f, 10.0f, 10.0f}, camera.cameraPos);
-	glm_vec3_copy((vec3){0.0f, -1.0f, 0.0f}, camera.cameraTarget);
-	glm_vec3_copy((vec3){0.0f, 0.0f, 0.0f}, camera.cameraDirection);
+	glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.cameraTarget);
+	glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.cameraDirection);
 	glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.up);
 	glm_vec3_sub(camera.cameraPos, camera.cameraTarget,
 	                                               camera.cameraDirection);
@@ -127,3 +143,53 @@ struct player create_player(void)
 
 	return player;
 }
+
+char get_world_block(struct position w, struct chunk *chunks, int count) {
+    int cx = w.x >> 4, cy = w.y >> 4, cz = w.z >> 4;
+    for (int i = 0; i < count; i++) {
+        if (chunks[i].pos->x == cx && chunks[i].pos->y == cy && chunks[i].pos->z == cz) {
+            int lx = w.x - (cx << 4), ly = w.y - (cy << 4), lz = w.z - (cz << 4);
+            return chunks[i].chunk_data[lx + (ly << 4) + (lz << 8)];
+        }
+    }
+    return 0;
+}
+
+int select_block(struct player player, struct chunk *chunks, struct position *selected_block) {
+	vec3 dir;
+	glm_vec3_copy(player.head.cameraDirection, dir);
+	glm_vec3_normalize(dir);
+	struct position ray_pos;
+	ray_pos.x = (int)floorf(player.head.cameraPos[0]);
+	ray_pos.y = (int)floorf(player.head.cameraPos[1]);
+	ray_pos.z = (int)floorf(player.head.cameraPos[2]);
+	int step_x = (dir[0] > 0) ? 1 : -1;
+	int step_y = (dir[1] > 0) ? 1 : -1;
+	int step_z = (dir[2] > 0) ? 1 : -1;
+	float delta_x = (dir[0] != 0) ? fabsf(1.0f / dir[0]) : 1e10f;
+	float delta_y = (dir[1] != 0) ? fabsf(1.0f / dir[1]) : 1e10f;
+	float delta_z = (dir[2] != 0) ? fabsf(1.0f / dir[2]) : 1e10f;
+	float tMaxX = dir[0] ? ((step_x > 0 ? ray_pos.x + 1 : ray_pos.x) - player.head.cameraPos[0]) / dir[0] : 1e10f;
+    float tMaxY = dir[1] ? ((step_y > 0 ? ray_pos.y + 1 : ray_pos.y) - player.head.cameraPos[1]) / dir[1] : 1e10f;
+    float tMaxZ = dir[2] ? ((step_z > 0 ? ray_pos.z + 1 : ray_pos.z) - player.head.cameraPos[2]) / dir[2] : 1e10f;
+	for (int i = 0; i < 100; i++) {
+    	if (get_world_block(ray_pos, chunks, (int)pow(2 * RENDER_DISTANCE - 1, 3)) == '*') {
+    	    selected_block->x = ray_pos.x;
+			selected_block->y = ray_pos.y;
+			selected_block->z = ray_pos.z;
+			return 1;
+    	}
+    	if (tMaxX < tMaxY) {
+    	    if (tMaxX < tMaxZ) { ray_pos.x += step_x; tMaxX += delta_x; }
+    	    else                { ray_pos.z += step_z; tMaxZ += delta_z; }
+    	} else {
+    	    if (tMaxY < tMaxZ) { ray_pos.y += step_y; tMaxY += delta_y; }
+    	    else               { ray_pos.z += step_z; tMaxZ += delta_z; }
+    	}
+    }
+    return -1;
+
+
+}
+
+

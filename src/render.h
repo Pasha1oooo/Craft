@@ -48,7 +48,12 @@ struct time {
 
 void create_window(GLFWwindow ** window, int fb_width , int fb_height);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO, unsigned int *EBO, unsigned int *instanceVBO, unsigned int *VBO_highlight, unsigned int *VAO_highlight, unsigned int *EBO_highlight);
+void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
+                            unsigned int *EBO, unsigned int *instanceVBO,
+                            unsigned int *VBO_highlight,
+                            unsigned int *VAO_highlight,
+                            unsigned int *EBO_highlight);
+
 void render_chunks(struct chunk *chunks, unsigned int texture_stone,
                    unsigned int texture_ore, unsigned int VAO);
 

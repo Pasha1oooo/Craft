@@ -50,6 +50,8 @@ int main(void)
 	shaderProgram = prepare_shaders();
 	shaderProgram2 = prepare_shaders2();
 
+	struct notcurses *nc = notcurses_prepare();
+
 	modelLoc = glGetUniformLocation(shaderProgram, "model");
 	viewLoc = glGetUniformLocation(shaderProgram, "view");
 	projectionLoc = glGetUniformLocation(shaderProgram, "projection");
@@ -107,28 +109,21 @@ int main(void)
             glBindVertexArray(VAO_highlight);
             glBindTexture(GL_TEXTURE_2D, texture2);
             glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-            glUseProgram(shaderProgram); // возвращаемся к основному шейдеру для следующего кадра
+            glUseProgram(shaderProgram);
         }
 
 		glfwSwapBuffers(window);
-		glReadBuffer(GL_BACK);
+		//ASCII render part
 
+		glReadBuffer(GL_BACK);
 		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT, GL_RGBA,
 		                                     GL_UNSIGNED_BYTE, frame_buffer);
 		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT,
 		                   GL_DEPTH_COMPONENT, GL_FLOAT, depth_buffer);
-
-		for (int y = FB_HEIGHT - 1; y >= 0; y--) {
-			for (int x = 0; x < FB_WIDTH; x++) {
-				int idx = (y * FB_WIDTH + x) * 4;
-				float depth = depth_buffer[y * FB_WIDTH + x];
-
-				putpixel(frame_buffer + idx, depth);
-			}
-
-			printf("\n");
-		}
-
+		struct ncplane* n = notcurses_stdplane(nc);
+		notcurses_render_ascii(nc, n, frame_buffer, depth_buffer);
+		stat_render(nc, n, time);
+		notcurses_render(nc);
 		glfwPollEvents();
 		printf("\033[H");
 	}
@@ -143,6 +138,7 @@ int main(void)
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
 	glDeleteProgram(shaderProgram);
+	notcurses_stop(nc);
 
 	glfwTerminate();
 

@@ -199,33 +199,45 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO, unsigned int *
 	return;
 }
 
-void render_chunks(struct chunk *chunks, unsigned int texture,
-                                                              unsigned int VAO)
+void render_chunks(struct chunk *chunks, unsigned int texture_stone, unsigned int texture_ore, unsigned int VAO)
 {
 	const int CHUNKS_AMOUNT = pow(2 * RENDER_DISTANCE - 1, 3);
 	int block_amount = pow(CHUNK_SIZE, 3);
 	mat4 *modelMatrices;
-
+	int ID = 0;
+	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
 	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
-		modelMatrices = draw_chunk(&(chunks[i]));
-		glBindTexture(GL_TEXTURE_2D, texture);
+		mat4 *modelMatrices_stone = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
+		mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
+		draw_chunk(&(chunks[i]), &ID, &modelMatrices_stone, &modelMatrices_ore);
+
 		glBindVertexArray(VAO);
+		glBindTexture(GL_TEXTURE_2D, texture_stone);
 		glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4),
-		                                modelMatrices, GL_STATIC_DRAW);
+		                                modelMatrices_stone, GL_STATIC_DRAW);
 		glDrawElementsInstanced(GL_TRIANGLES,
 		                        sizeof(indices) / sizeof(indices[0]),
 		                        GL_UNSIGNED_INT, 0, block_amount);
-		free(modelMatrices);
+		glBindTexture(GL_TEXTURE_2D, texture_ore);
+		glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4),
+		                                modelMatrices_ore, GL_STATIC_DRAW);
+		glDrawElementsInstanced(GL_TRIANGLES,
+		                        sizeof(indices) / sizeof(indices[0]),
+		                        GL_UNSIGNED_INT, 0, block_amount);
+		free(modelMatrices_ore);
+		free(modelMatrices_stone);
+
 	}
 
 	return;
 }
 
-mat4 *draw_chunk(struct chunk *chunk)
+void draw_chunk(struct chunk *chunk, int *ID, mat4 **stone, mat4 **ore)
 {
 	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
 	//TODO remove calloc
-	mat4 *modelMatrices = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
+	//mat4 *modelMatrices_stone = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
+	//mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
 
 	for (int i = 0; i < BLOCKS_AMOUNT; i++) {
 		if (chunk->chunk_data[i] == '*') {
@@ -240,11 +252,27 @@ mat4 *draw_chunk(struct chunk *chunk)
 			                        i / (CHUNK_SIZE * CHUNK_SIZE));
 
 			glm_translate(model, offset);
-			glm_mat4_copy(model, modelMatrices[i]);
+			glm_mat4_copy(model, (*stone)[i]);
+			*ID = 1;
 		}
-	}
+		if (chunk->chunk_data[i] == '#') {
+			mat4 model = GLM_MAT4_IDENTITY_INIT;
+			vec3 offset;
 
-	return modelMatrices;
+			offset[0] = (float)(chunk->pos->x * CHUNK_SIZE +
+			                                     (i % CHUNK_SIZE));
+			offset[1] = (float)(chunk->pos->y * CHUNK_SIZE +
+			                       (i / CHUNK_SIZE) % CHUNK_SIZE);
+			offset[2] = (float)(chunk->pos->z * CHUNK_SIZE +
+			                        i / (CHUNK_SIZE * CHUNK_SIZE));
+
+			glm_translate(model, offset);
+			glm_mat4_copy(model, (*ore)[i]);
+			*ID = 2;
+		}
+
+	}
+	return;
 }
 
 void putpixel(unsigned char *pixels, float pixels_depth)

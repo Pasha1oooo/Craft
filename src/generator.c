@@ -144,8 +144,18 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	perlin_value = glm_perlin_vec3(point);
 	biome_value = glm_perlin_vec3(biome_point);
 
-	if ((perlin_value + 1.0f) * (biome_value + 1.0f) / 4.0f <= 0.25f) {
+	if ((perlin_value + 1.0f) * (biome_value + 1.0f) <= 1.0f) {
 		result = '*';
+	}
+
+	if (result == '*') {
+		point[0] = (float)x / 10.001f;
+		point[1] = (float)y / 10.001f;
+		point[2] = (float)z / 10.001f;
+		perlin_value = glm_perlin_vec3(point);
+		if (perlin_value <= -0.0f) {
+			result = '#';
+		}
 	}
 
 	return result;

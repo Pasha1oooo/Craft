@@ -95,6 +95,7 @@ void processInput(GLFWwindow * window, struct player *player, struct chunk **chu
 		glfwSetWindowShouldClose(window, 1);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		if(glm_deg(player->head.yaw))
 	    player->position[0] += player->speed * player->head.cameraDirection[0];
 	    player->position[2] += player->speed * player->head.cameraDirection[2];
 	}
@@ -144,21 +145,21 @@ void processInput(GLFWwindow * window, struct player *player, struct chunk **chu
 	}
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
 		player->head.yaw+=5.0f;
+		if(player->head.yaw>=360) player->head.yaw = 0;
     	update_camera_direction(&player->head);
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
 		player->head.yaw-=5.0f;
+		if(player->head.yaw<=-360) player->head.yaw = 0;
 		update_camera_direction(&player->head);
 	}
 	//it will be roll later
 	if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS){
 		player->head.roll+=2;
-		if (player->head.roll > 360.0f) player->head.roll = 0;
     	update_camera_direction(&player->head);
 	}
 	if (glfwGetKey(window, GLFW_KEY_COMMA) == GLFW_PRESS){
 		player->head.roll-=2;
-		if (player->head.roll < -360.0f) player->head.roll = 0;
 		update_camera_direction(&player->head);
 	}
 

@@ -27,7 +27,7 @@ int main(void)
 	unsigned int modelLoc, viewLoc, projectionLoc; // modelLoc?
 	unsigned int VBO, VAO, EBO, instanceVBO;
 	unsigned int VBO_highlight, VAO_highlight, EBO_highlight;
-	unsigned int shaderProgram, shaderProgram2, texture, texture2;
+	unsigned int shaderProgram, shaderProgram2, texture, texture2, texture3;
 	vec3 target;
 	mat4 view = GLM_MAT4_IDENTITY_INIT;
 	struct time time;
@@ -45,6 +45,7 @@ int main(void)
 
 	prepare_texture(&texture, "a.png");
 	prepare_texture(&texture2, "black.png");
+	prepare_texture(&texture3, "c.png");
 
 	shaderProgram = prepare_shaders();
 	shaderProgram2 = prepare_shaders2();
@@ -92,7 +93,7 @@ int main(void)
 
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 
-		render_chunks(loaded_chunks, texture, VAO);
+		render_chunks(loaded_chunks, texture, texture3, VAO);
 		glm_vec3_copy(player.position,player.head.cameraPos);
 
 
@@ -110,23 +111,23 @@ int main(void)
         }
 
 		glfwSwapBuffers(window);
-		glReadBuffer(GL_BACK);
-
-		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT, GL_RGBA,
-		                                     GL_UNSIGNED_BYTE, frame_buffer);
-		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT,
-		                   GL_DEPTH_COMPONENT, GL_FLOAT, depth_buffer);
-
-		for (int y = FB_HEIGHT - 1; y >= 0; y--) {
-			for (int x = 0; x < FB_WIDTH; x++) {
-				int idx = (y * FB_WIDTH + x) * 4;
-				float depth = depth_buffer[y * FB_WIDTH + x];
-
-				putpixel(frame_buffer + idx, depth);
-			}
-
-			printf("\n");
-		}
+		//glReadBuffer(GL_BACK);
+//
+		//glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT, GL_RGBA,
+		//                                     GL_UNSIGNED_BYTE, frame_buffer);
+		//glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT,
+		//                   GL_DEPTH_COMPONENT, GL_FLOAT, depth_buffer);
+//
+		//for (int y = FB_HEIGHT - 1; y >= 0; y--) {
+		//	for (int x = 0; x < FB_WIDTH; x++) {
+		//		int idx = (y * FB_WIDTH + x) * 4;
+		//		float depth = depth_buffer[y * FB_WIDTH + x];
+//
+		//		putpixel(frame_buffer + idx, depth);
+		//	}
+//
+		//	printf("\n");
+		//}
 
 		glfwPollEvents();
 		printf("\033[H");

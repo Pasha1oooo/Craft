@@ -75,11 +75,11 @@ void calculate_fps(struct time *time)
 }
 
 void update_camera_direction(struct camera *cam) {
-    cam->cameraDirection[0] = cos(glm_rad(cam->yaw)) * cos(glm_rad(cam->pitch));
-    cam->cameraDirection[1] = sin(glm_rad(cam->pitch));
-    cam->cameraDirection[2] = sin(glm_rad(cam->yaw)) * cos(glm_rad(cam->pitch));
+    cam->cameraDirection[0] = cos(glm_rad(cam->pitch)) * cos(glm_rad(cam->yaw));
+    cam->cameraDirection[1] = cos(glm_rad(cam->pitch)) * sin(glm_rad(cam->yaw));
+    cam->cameraDirection[2] = sin(glm_rad(cam->pitch));
 
-	vec3 world_up = {0.0f, 1.0f, 0.0f};
+	vec3 world_up = {0.0f, 0.0f, 1.0f};
     glm_vec3_rotate(world_up, glm_rad(cam->roll), cam->cameraDirection);
     glm_vec3_copy(world_up, cam->cameraUp);
 
@@ -95,26 +95,26 @@ void processInput(GLFWwindow * window, struct player *player, struct chunk **chu
 		glfwSetWindowShouldClose(window, 1);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-		if(glm_deg(player->head.yaw))
 	    player->position[0] += player->speed * player->head.cameraDirection[0];
-	    player->position[2] += player->speed * player->head.cameraDirection[2];
+	    player->position[1] += player->speed * player->head.cameraDirection[1];
 	}
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
 	    player->position[0] -= player->speed * player->head.cameraDirection[0];
-	    player->position[2] -= player->speed * player->head.cameraDirection[2];
+	    player->position[1] -= player->speed * player->head.cameraDirection[1];
 	}
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-	    player->position[0] += player->speed * player->head.cameraDirection[2];
-	    player->position[2] -= player->speed * player->head.cameraDirection[0];
+	    player->position[0] -= player->speed * player->head.cameraDirection[1];
+	    player->position[1] += player->speed * player->head.cameraDirection[0];
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-	    player->position[0] -= player->speed * player->head.cameraDirection[2];
-	    player->position[2] += player->speed * player->head.cameraDirection[0];
+	    player->position[0] += player->speed * player->head.cameraDirection[1];
+	    player->position[1] -= player->speed * player->head.cameraDirection[0];
 	}
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		player->position[1] += player->speed;
+	    player->position[2] += player->speed;
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-		player->position[1] -= player->speed;
+	    player->position[2] -= player->speed;
+
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
 	    if (selected_block.x == -1) return;
 
@@ -144,12 +144,12 @@ void processInput(GLFWwindow * window, struct player *player, struct chunk **chu
 	    update_camera_direction(&player->head);
 	}
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
-		player->head.yaw+=5.0f;
+		player->head.yaw-=5.0f;
 		if(player->head.yaw>=360) player->head.yaw = 0;
     	update_camera_direction(&player->head);
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
-		player->head.yaw-=5.0f;
+		player->head.yaw+=5.0f;
 		if(player->head.yaw<=-360) player->head.yaw = 0;
 		update_camera_direction(&player->head);
 	}
@@ -170,7 +170,7 @@ struct camera create_camera(void)
     struct camera camera;
 
     camera.pitch = 0.0f;
-    camera.yaw   = -90.0f;
+    camera.yaw   = 90.0f;
     camera.roll  = 0.0f;
 
     camera.cameraPos[0] = 0.0f;
@@ -179,7 +179,7 @@ struct camera create_camera(void)
 
     update_camera_direction(&camera);
 
-    glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.cameraUp); // поле должно называться cameraUp
+    glm_vec3_copy((vec3){0.0f, 0.0f, 1.0f}, camera.cameraUp); // поле должно называться cameraUp
 	glm_vec3_cross(camera.cameraUp, camera.cameraDirection, camera.cameraRight);
 
     return camera;
@@ -191,8 +191,8 @@ struct player create_player(void)
 
 	player.head = create_camera();
 	player.position[0] = 0;
-	player.position[1] = 1;
-	player.position[2] = 0;
+	player.position[1] = 0;
+	player.position[2] = 1;
 	player.speed = 0.2f;
 	player.rotation_speed = 0.2f;
 
@@ -228,7 +228,7 @@ int select_block(struct player player, struct chunk *chunks, struct position *se
     float tMaxY = dir[1] ? ((step_y > 0 ? ray_pos.y + 1 : ray_pos.y) - player.head.cameraPos[1]) / dir[1] : 1e10f;
     float tMaxZ = dir[2] ? ((step_z > 0 ? ray_pos.z + 1 : ray_pos.z) - player.head.cameraPos[2]) / dir[2] : 1e10f;
 	for (int i = 0; i < 100; i++) {
-    	if (get_world_block(ray_pos, chunks, (int)pow(2 * RENDER_DISTANCE - 1, 3)) == '*') {
+    	if (get_world_block(ray_pos, chunks, (int)pow(2 * RENDER_DISTANCE - 1, 3)) == '*' || get_world_block(ray_pos, chunks, (int)pow(2 * RENDER_DISTANCE - 1, 3)) == '#') {
     	    selected_block->x = ray_pos.x;
 			selected_block->y = ray_pos.y;
 			selected_block->z = ray_pos.z;

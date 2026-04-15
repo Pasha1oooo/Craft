@@ -208,7 +208,6 @@ void render_chunks(struct chunk *chunks, unsigned int texture,
 
 	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
 		modelMatrices = draw_chunk(&(chunks[i]));
-
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glBindVertexArray(VAO);
 		glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4),
@@ -225,6 +224,7 @@ void render_chunks(struct chunk *chunks, unsigned int texture,
 mat4 *draw_chunk(struct chunk *chunk)
 {
 	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
+	//TODO remove calloc
 	mat4 *modelMatrices = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
 
 	for (int i = 0; i < BLOCKS_AMOUNT; i++) {

@@ -13,52 +13,8 @@
 #include "texture.h"
 #include "logic.h"
 
-vec3 cameraFront = {0,0,-1};
+//TODO notcurses
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-	static bool firstMouse = true;
-	static float lastX = 0.0f, lastY = 0.0f;
-	static float yaw = -90.0f;    // начальное направление (смотрит вдоль -Z)
-	static float pitch = 0.0f;
-	extern vec3 cameraFront;
-    (void)window; // подавляем предупреждение о неиспользуемом параметре
-
-    if (firstMouse) {
-        lastX = (float)xpos;
-        lastY = (float)ypos;
-        firstMouse = false;
-        return;
-    }
-
-    float xoffset = (float)xpos - lastX;
-    float yoffset = lastY - (float)ypos; // reversed since y-coordinates go from bottom to top
-    lastX = (float)xpos;
-    lastY = (float)ypos;
-
-    const float sensitivity = 0.1f;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-
-    yaw   += xoffset;
-    pitch += yoffset;
-
-    // Ограничение угла обзора (чтобы не перевернуться)
-    if (pitch > 89.0f)  pitch = 89.0f;
-    if (pitch < -89.0f) pitch = -89.0f;
-
-    // Вычисляем вектор направления камеры (cameraFront)
-    float yaw_rad   = glm_rad(yaw);
-    float pitch_rad = glm_rad(pitch);
-
-    vec3 direction = {
-        cosf(yaw_rad) * cosf(pitch_rad),
-        sinf(pitch_rad),
-        sinf(yaw_rad) * cosf(pitch_rad)
-    };
-    // Нормализуем и сохраняем в cameraFront
-    glm_vec3_copy(direction, cameraFront);
-    glm_vec3_normalize(cameraFront);
-}
 
 int main(void)
 {
@@ -72,15 +28,13 @@ int main(void)
 	unsigned int VBO, VAO, EBO, instanceVBO;
 	unsigned int VBO_highlight, VAO_highlight, EBO_highlight;
 	unsigned int shaderProgram, shaderProgram2, texture, texture2;
-	vec3 player_pos, target;
+	vec3 target;
 	mat4 view = GLM_MAT4_IDENTITY_INIT;
 	struct time time;
 	struct player player;
 	struct chunk *loaded_chunks = init_chunks();
-	glm_vec3_copy(cameraFront, player.head.cameraDirection);
 	create_window(&window, FB_WIDTH, FB_HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetCursorPosCallback(window, mouse_callback);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		printf("Failed to initialize GLAD\n");
@@ -91,6 +45,7 @@ int main(void)
 
 	prepare_texture(&texture, "a.png");
 	prepare_texture(&texture2, "black.png");
+
 	shaderProgram = prepare_shaders();
 	shaderProgram2 = prepare_shaders2();
 
@@ -118,15 +73,9 @@ int main(void)
 		glUseProgram(shaderProgram);
 		glUniform1i(glGetUniformLocation(shaderProgram, "Texture"), 0);
 
-		player_pos[0] = player.x;
-		player_pos[1] = player.y;
-		player_pos[2] = player.z;
-
-		glm_vec3_copy(player_pos, player.head.cameraPos);
-		glm_vec3_copy(cameraFront, player.head.cameraDirection);
+		glm_vec3_copy(player.position, player.head.cameraPos);
 		glm_vec3_add(player.head.cameraPos, player.head.cameraDirection, target);
-		glm_lookat(player.head.cameraPos, target, player.head.cameraUp,
-		                                                         view);
+		glm_lookat(player.head.cameraPos, target, player.head.cameraUp, view);
 
 
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
@@ -144,7 +93,7 @@ int main(void)
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 
 		render_chunks(loaded_chunks, texture, VAO);
-		glm_vec3_copy((vec3){player.x, player.y, player.z},player.head.cameraPos);
+		glm_vec3_copy(player.position,player.head.cameraPos);
 
 
         if (select_block(player, loaded_chunks, &selected_block) == 1) {
@@ -181,7 +130,6 @@ int main(void)
 
 		glfwPollEvents();
 		printf("\033[H");
-		//calculate_fps(&time);
 	}
 
 	free(frame_buffer);

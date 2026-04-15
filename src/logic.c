@@ -74,25 +74,47 @@ void calculate_fps(struct time *time)
 	}
 }
 
+void update_camera_direction(struct camera *cam) {
+    cam->cameraDirection[0] = cos(glm_rad(cam->yaw)) * cos(glm_rad(cam->pitch));
+    cam->cameraDirection[1] = sin(glm_rad(cam->pitch));
+    cam->cameraDirection[2] = sin(glm_rad(cam->yaw)) * cos(glm_rad(cam->pitch));
+
+	vec3 world_up = {0.0f, 1.0f, 0.0f};
+    glm_vec3_rotate(world_up, glm_rad(cam->roll), cam->cameraDirection);
+    glm_vec3_copy(world_up, cam->cameraUp);
+
+    glm_normalize(cam->cameraDirection);
+	glm_normalize(cam->cameraUp);
+	glm_normalize(cam->cameraRight);
+	glm_cross(cam->cameraDirection, cam->cameraUp, cam->cameraRight);
+}
+
 void processInput(GLFWwindow * window, struct player *player, struct chunk **chunks, struct position selected_block)
 {
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, 1);
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		player->y += player->speed;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		player->y -= player->speed;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		player->x += player->speed;
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		player->x -= player->speed;
-
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+	    player->position[0] += player->speed * player->head.cameraDirection[0];
+	    player->position[2] += player->speed * player->head.cameraDirection[2];
+	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+	    player->position[0] -= player->speed * player->head.cameraDirection[0];
+	    player->position[2] -= player->speed * player->head.cameraDirection[2];
+	}
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+	    player->position[0] += player->speed * player->head.cameraDirection[2];
+	    player->position[2] -= player->speed * player->head.cameraDirection[0];
+	}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+	    player->position[0] -= player->speed * player->head.cameraDirection[2];
+	    player->position[2] += player->speed * player->head.cameraDirection[0];
+	}
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		player->z -= player->speed;
+		player->position[1] += player->speed;
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-		player->z += player->speed;
-	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+		player->position[1] -= player->speed;
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
 	    if (selected_block.x == -1) return;
 
 	    int chank_x = floor(selected_block.x / 16.0f);
@@ -110,24 +132,56 @@ void processInput(GLFWwindow * window, struct player *player, struct chunk **chu
 	        }
 	    }
 	}
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    	player->head.pitch += 5.0f;
+    	if (player->head.pitch > 89.0f) player->head.pitch = 89.0f;
+    	update_camera_direction(&player->head);
+	}
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+	    player->head.pitch -= 5.0f;
+	    if (player->head.pitch < -89.0f) player->head.pitch = -89.0f;
+	    update_camera_direction(&player->head);
+	}
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
+		player->head.yaw+=5.0f;
+    	update_camera_direction(&player->head);
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
+		player->head.yaw-=5.0f;
+		update_camera_direction(&player->head);
+	}
+	//it will be roll later
+	if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS){
+		player->head.roll+=2;
+		if (player->head.roll > 360.0f) player->head.roll = 0;
+    	update_camera_direction(&player->head);
+	}
+	if (glfwGetKey(window, GLFW_KEY_COMMA) == GLFW_PRESS){
+		player->head.roll-=2;
+		if (player->head.roll < -360.0f) player->head.roll = 0;
+		update_camera_direction(&player->head);
+	}
+
 }
 
-struct camera create_camera(void) // TODO
+struct camera create_camera(void)
 {
-	struct camera camera;
+    struct camera camera;
 
-	glm_vec3_copy((vec3){0.0f, 10.0f, 10.0f}, camera.cameraPos);
-	glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.cameraTarget);
-	glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.cameraDirection);
-	glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.up);
-	glm_vec3_sub(camera.cameraPos, camera.cameraTarget,
-	                                               camera.cameraDirection);
-	glm_vec3_normalize(camera.cameraDirection);
-	glm_cross(camera.up, camera.cameraDirection, camera.cameraRight);
-	glm_normalize(camera.cameraRight);
-	glm_cross(camera.cameraDirection, camera.cameraRight, camera.cameraUp);
+    camera.pitch = 0.0f;
+    camera.yaw   = -90.0f;
+    camera.roll  = 0.0f;
 
-	return camera;
+    camera.cameraPos[0] = 0.0f;
+    camera.cameraPos[1] = 0.0f;
+    camera.cameraPos[2] = 0.0f;
+
+    update_camera_direction(&camera);
+
+    glm_vec3_copy((vec3){0.0f, 1.0f, 0.0f}, camera.cameraUp); // поле должно называться cameraUp
+	glm_vec3_cross(camera.cameraUp, camera.cameraDirection, camera.cameraRight);
+
+    return camera;
 }
 
 struct player create_player(void)
@@ -135,9 +189,9 @@ struct player create_player(void)
 	struct player player;
 
 	player.head = create_camera();
-	player.x = 0;
-	player.y = 0;
-	player.z = 0;
+	player.position[0] = 0;
+	player.position[1] = 1;
+	player.position[2] = 0;
 	player.speed = 0.2f;
 	player.rotation_speed = 0.2f;
 

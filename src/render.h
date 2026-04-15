@@ -27,13 +27,14 @@ struct camera {
 	vec3 up;
 	vec3 cameraRight;
 	vec3 cameraUp;
+	float yaw;
+	float pitch;
+	float roll;
 };
 
 struct player {
 	struct camera head;
-	float x;
-	float y;
-	float z;
+	vec3 position;
 	float speed;
 	float rotation_speed;
 };

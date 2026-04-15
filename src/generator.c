@@ -132,15 +132,6 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	int result = ' ';
 	vec3 point, biome_point;
 	float perlin_value, biome_value;
-/*
-	point[0] = x / 20.0f;
-	point[1] = y / 20.0f;
-	point[2] = z / 20.0f;
-
-	biome_point[0] = x / 200.0f;
-	biome_point[1] = y / 200.0f;
-	biome_point[2] = z / 200.0f;
-*/
 
 	point[0] = x / 20.0f;
 	point[1] = y / 20.0f;

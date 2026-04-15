@@ -114,7 +114,9 @@ void processInput(GLFWwindow * window, struct player *player, struct chunk **chu
 	    player->position[2] += player->speed;
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 	    player->position[2] -= player->speed;
-
+	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
+	    player->head.FOV = 10.0f;
+	else player->head.FOV = 90.0f;
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
 	    if (selected_block.x == -1) return;
 
@@ -172,6 +174,7 @@ struct camera create_camera(void)
     camera.pitch = 0.0f;
     camera.yaw   = 90.0f;
     camera.roll  = 0.0f;
+	camera.FOV = 90.0f;
 
     camera.cameraPos[0] = 0.0f;
     camera.cameraPos[1] = 0.0f;
@@ -200,11 +203,18 @@ struct player create_player(void)
 }
 
 char get_world_block(struct position w, struct chunk *chunks, int count) {
-    int cx = w.x >> 4, cy = w.y >> 4, cz = w.z >> 4;
+    // целочисленное деление с округлением вниз для отрицательных чисел
+    int cx = (w.x >= 0) ? w.x / 16 : (w.x - 15) / 16;
+    int cy = (w.y >= 0) ? w.y / 16 : (w.y - 15) / 16;
+    int cz = (w.z >= 0) ? w.z / 16 : (w.z - 15) / 16;
+
+    int lx = w.x - cx * 16;
+    int ly = w.y - cy * 16;
+    int lz = w.z - cz * 16;
+
     for (int i = 0; i < count; i++) {
         if (chunks[i].pos->x == cx && chunks[i].pos->y == cy && chunks[i].pos->z == cz) {
-            int lx = w.x - (cx << 4), ly = w.y - (cy << 4), lz = w.z - (cz << 4);
-            return chunks[i].chunk_data[lx + (ly << 4) + (lz << 8)];
+            return chunks[i].chunk_data[lx + ly * 16 + lz * 256];
         }
     }
     return 0;

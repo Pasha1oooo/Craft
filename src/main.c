@@ -81,7 +81,7 @@ int main(void)
 
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
 		mat4 projection;
-		glm_perspective(glm_rad(90.0f), (float)FB_WIDTH /
+		glm_perspective(glm_rad(player.head.FOV), (float)FB_WIDTH /
 		                  (FB_HEIGHT+150), 0.1f, 10000.0f, projection);
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
 		                                           (float*)projection);
@@ -94,7 +94,7 @@ int main(void)
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 
 		render_chunks(loaded_chunks, texture, texture3, VAO);
-		glm_vec3_copy(player.position,player.head.cameraPos);
+		glm_vec3_copy(player.position, player.head.cameraPos);
 
 
         if (select_block(player, loaded_chunks, &selected_block) == 1) {
@@ -111,23 +111,23 @@ int main(void)
         }
 
 		glfwSwapBuffers(window);
-		//glReadBuffer(GL_BACK);
-//
-		//glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT, GL_RGBA,
-		//                                     GL_UNSIGNED_BYTE, frame_buffer);
-		//glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT,
-		//                   GL_DEPTH_COMPONENT, GL_FLOAT, depth_buffer);
-//
-		//for (int y = FB_HEIGHT - 1; y >= 0; y--) {
-		//	for (int x = 0; x < FB_WIDTH; x++) {
-		//		int idx = (y * FB_WIDTH + x) * 4;
-		//		float depth = depth_buffer[y * FB_WIDTH + x];
-//
-		//		putpixel(frame_buffer + idx, depth);
-		//	}
-//
-		//	printf("\n");
-		//}
+		glReadBuffer(GL_BACK);
+
+		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT, GL_RGBA,
+		                                     GL_UNSIGNED_BYTE, frame_buffer);
+		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT,
+		                   GL_DEPTH_COMPONENT, GL_FLOAT, depth_buffer);
+
+		for (int y = FB_HEIGHT - 1; y >= 0; y--) {
+			for (int x = 0; x < FB_WIDTH; x++) {
+				int idx = (y * FB_WIDTH + x) * 4;
+				float depth = depth_buffer[y * FB_WIDTH + x];
+
+				putpixel(frame_buffer + idx, depth);
+			}
+
+			printf("\n");
+		}
 
 		glfwPollEvents();
 		printf("\033[H");

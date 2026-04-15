@@ -7,11 +7,11 @@
 #include "generator.h"
 
 enum render_parameters {
-	FB_WIDTH = 2560,
-	FB_HEIGHT = 1000,
+	//FB_WIDTH = 2560,
+	//FB_HEIGHT = 1000,
 	BLOCK_TYPES_AMOUNT = 8,
-	//FB_WIDTH = 510,
-	//FB_HEIGHT = 90,
+	FB_WIDTH = 510,
+	FB_HEIGHT = 90,
 	FPS_COUNT_TIME_INTERVAL = 3,
 };
 
@@ -30,6 +30,7 @@ struct camera {
 	float yaw;
 	float pitch;
 	float roll;
+	float FOV;
 };
 
 struct player {

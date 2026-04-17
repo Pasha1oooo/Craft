@@ -15,22 +15,22 @@
 
 int main(void)
 {
-	unsigned char *frame_buffer = (unsigned char*)calloc(FB_WIDTH * FB_HEIGHT,
-	                                                        sizeof(float));
+	unsigned char *frame_buffer = (unsigned char*)calloc(FB_WIDTH *
+	                                             FB_HEIGHT, sizeof(float));
 	float *depth_buffer = (float*)calloc(FB_WIDTH * FB_HEIGHT,
-	                                                        sizeof(float));
+	                                     sizeof(float));
 	GLFWwindow *window;
 	struct position saved_chunk_pos = {.x = 0, .y = 0, .z = 0};
 	unsigned int modelLoc, viewLoc, projectionLoc; // modelLoc?
 	unsigned int VBO, VAO, EBO, instanceVBO;
 	unsigned int VBO_highlight, VAO_highlight, EBO_highlight;
-	unsigned int shaderProgram, shaderProgram2, texture, texture2;
-	vec3 player_pos, target;
+	unsigned int shaderProgram, shaderProgram2;
+	unsigned int texture, texture2, texture3;
+	vec3 target;
 	mat4 view = GLM_MAT4_IDENTITY_INIT;
 	struct time time;
 	struct player player;
 	struct chunk *loaded_chunks = init_chunks();
-
 	create_window(&window, FB_WIDTH, FB_HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -39,10 +39,16 @@ int main(void)
 		return 0;
 	}
 
-	prepare_gl_environment(&VBO, &VAO, &EBO, &instanceVBO, &VBO_highlight, &VAO_highlight, &EBO_highlight);
+	prepare_gl_environment(&VBO, &VAO, &EBO,
+	                       &instanceVBO,
+	                       &VBO_highlight,
+	                       &VAO_highlight,
+	                       &EBO_highlight);
 
 	prepare_texture(&texture, "a.png");
-	prepare_texture(&texture2, "cat.png");
+	prepare_texture(&texture2, "black.png");
+	prepare_texture(&texture3, "c.png");
+
 	shaderProgram = prepare_shaders();
 	shaderProgram2 = prepare_shaders2();
 
@@ -54,10 +60,12 @@ int main(void)
 
 	time.frame_counter = 0;
 	time.start = glfwGetTime();
+	struct position selected_block;
+	selected_block.x = -1; selected_block.y = -1; selected_block.z = -1;
 
 	while(!glfwWindowShouldClose(window)) {
 
-		processInput(window, &player);
+		processInput(window, &player, &loaded_chunks, selected_block);
 
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -66,72 +74,90 @@ int main(void)
 		glUseProgram(shaderProgram);
 		glUniform1i(glGetUniformLocation(shaderProgram, "Texture"), 0);
 
-		player_pos[0] = player.x;
-		player_pos[1] = player.y;
-		player_pos[2] = player.z;
+		glm_vec3_copy(player.position, player.head.cameraPos);
+		glm_vec3_add(player.head.cameraPos,
+		             player.head.cameraDirection,
+		             target);
+		glm_lookat(player.head.cameraPos,
+		           target,
+		           player.head.cameraUp,
+		           view);
 
-		glm_vec3_copy(player_pos, player.head.cameraPos);
-		glm_vec3_add(player.head.cameraPos, (vec3){0, 1, 0}, target);
-		glm_lookat(player.head.cameraPos, target, player.head.cameraUp,
-		                                                         view);
 
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
 		mat4 projection;
-		glm_perspective(glm_rad(90.0f), (float)FB_WIDTH /
-		                  (FB_HEIGHT+150), 0.1f, 10000.0f, projection);
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
-		                                           (float*)projection);
+		glm_perspective(glm_rad(90.0f),
+		                (float)FB_WIDTH /
+		                (FB_HEIGHT+150),
+		                0.1f, 10000.0f,
+		                projection);
+		glUniformMatrix4fv(projectionLoc,
+		                   1, GL_FALSE,
+		                   (float*)projection);
 
-		if (is_chunk_changed(player.head.cameraPos, &saved_chunk_pos)) {
+		if (is_chunk_changed(player.head.cameraPos,
+		                     &saved_chunk_pos)) {
+
 			get_chunks(loaded_chunks, player.head.cameraPos);
-			save_chunk_pos(&player.head.cameraPos, &saved_chunk_pos);
+			save_chunk_pos(&player.head.cameraPos,
+			               &saved_chunk_pos);
 		}
 
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 
-		render_chunks(loaded_chunks, texture, VAO);
-		glm_vec3_copy((vec3){player.x, player.y, player.z},player.head.cameraPos);
-		int selected_block_x = -1, selected_block_y = -1, selected_block_z = -1;
-        for (int i = 0; i < (int)pow(2 * RENDER_DISTANCE - 1, 3); i++) {
-            if (select_block(player, loaded_chunks[i], &selected_block_x, &selected_block_y, &selected_block_z)) {
-                break;
-            }
+		render_chunks(loaded_chunks, texture, texture3, VAO);
+		glm_vec3_copy(player.position,player.head.cameraPos);
+
+		int is_selected = select_block(player,
+		                  loaded_chunks,
+		                  &selected_block);
+		if (is_selected == 1) {
+			mat4 model_highlight = GLM_MAT4_IDENTITY_INIT;
+			glUseProgram(shaderProgram2);
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,
+			                                        "view"),
+			                   1, GL_FALSE,
+			                   (float*)view);
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,
+			                                        "projection"),
+			                   1, GL_FALSE,
+			                   (float*)projection);
+			glm_translate(model_highlight,
+			              (vec3){selected_block.x,
+			                     selected_block.y,
+			                     selected_block.z});
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,
+			                                        "model"),
+			                   1, GL_FALSE,
+			                   (float*)model_highlight);
+			glBindVertexArray(VAO_highlight);
+			glBindTexture(GL_TEXTURE_2D, texture2);
+			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+			glUseProgram(shaderProgram);
 		}
-        if (selected_block_x != -1) {
-            glUseProgram(shaderProgram2);
-            glUniformMatrix4fv(glGetUniformLocation(shaderProgram2, "view"), 1, GL_FALSE, (float*)view);
-            glUniformMatrix4fv(glGetUniformLocation(shaderProgram2, "projection"), 1, GL_FALSE, (float*)projection);
-            mat4 model_highlight = GLM_MAT4_IDENTITY_INIT;
-            glm_translate(model_highlight, (vec3){selected_block_x , selected_block_y, selected_block_z});
-            glUniformMatrix4fv(glGetUniformLocation(shaderProgram2, "model"), 1, GL_FALSE, (float*)model_highlight);
-            glBindVertexArray(VAO_highlight);
-            glBindTexture(GL_TEXTURE_2D, texture2);
-            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-            glUseProgram(shaderProgram); // возвращаемся к основному шейдеру для следующего кадра
-        }
 
 		glfwSwapBuffers(window);
+/*
 		glReadBuffer(GL_BACK);
 
 		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT, GL_RGBA,
-		                                     GL_UNSIGNED_BYTE, frame_buffer);
+		             GL_UNSIGNED_BYTE, frame_buffer);
 		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT,
 		                   GL_DEPTH_COMPONENT, GL_FLOAT, depth_buffer);
-
-		for (int y = FB_HEIGHT - 1; y >= 0; y--) {
-			for (int x = 0; x < FB_WIDTH; x++) {
-				int idx = (y * FB_WIDTH + x) * 4;
-				float depth = depth_buffer[y * FB_WIDTH + x];
-
-				putpixel(frame_buffer + idx, depth);
-			}
-
-			printf("\n");
-		}
-
+//
+		//for (int y = FB_HEIGHT - 1; y >= 0; y--) {
+		//	for (int x = 0; x < FB_WIDTH; x++) {
+		//		int idx = (y * FB_WIDTH + x) * 4;
+		//		float depth = depth_buffer[y * FB_WIDTH + x];
+//
+		//		putpixel(frame_buffer + idx, depth);
+		//	}
+//
+		//	printf("\n");
+		//}
+*/
 		glfwPollEvents();
-		printf("\033[H");
-		//calculate_fps(&time);
+//		printf("\033[H");
 	}
 
 	free(frame_buffer);

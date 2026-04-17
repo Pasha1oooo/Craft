@@ -8,7 +8,7 @@
 #include <cglm/cglm.h>
 
 const int CHUNK_SIZE = 16;
-const int RENDER_DISTANCE = 2;
+const int RENDER_DISTANCE = 4;
 const int CHUNK_NAME_LEN = 64;
 const char CHUNK_FILENAME_EXTENSION[] = ".chunk";
 const char FILE_PATH[] = "saves/";
@@ -16,8 +16,8 @@ const char FILE_PATH[] = "saves/";
 struct chunk *init_chunks(void)
 {
 	const int SIDE = 2 * RENDER_DISTANCE - 1;
-	struct chunk *loaded_chunks = (struct chunk *)calloc((size_t)pow(SIDE, 3),
-	                                                 sizeof(struct chunk));
+	struct chunk *loaded_chunks = (struct chunk *)calloc((size_t)pow(SIDE,
+	                                             3), sizeof(struct chunk));
 
 	for (int i = 0; i < (int)pow(SIDE, 3); i++) {
 
@@ -135,15 +135,6 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 /*
 	point[0] = x / 20.0f;
 	point[1] = y / 20.0f;
-	point[2] = z / 20.0f;
-
-	biome_point[0] = x / 200.0f;
-	biome_point[1] = y / 200.0f;
-	biome_point[2] = z / 200.0f;
-*/
-
-	point[0] = x / 20.0f;
-	point[1] = y / 20.0f;
 	point[2] = z / 10.0f;
 
 	biome_point[0] = x / 200.0f;
@@ -153,8 +144,37 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	perlin_value = glm_perlin_vec3(point);
 	biome_value = glm_perlin_vec3(biome_point);
 
-	if ((perlin_value + 1.0f) * (biome_value + 1.0f) / 4.0f <= 0.25f) {
+	if ((perlin_value + 1.0f) * (biome_value + 1.0f) <= 1.0f) {
 		result = '*';
+	}
+
+	if (result == '*') {
+		point[0] = (float)x / 10.001f;
+		point[1] = (float)y / 10.001f;
+		point[2] = (float)z / 10.001f;
+		perlin_value = glm_perlin_vec3(point);
+		if (perlin_value <= -0.4f) {
+			result = '#';
+		}
+	}
+*/
+
+	result = '*';
+
+	x = x < 0 ? -x : x;
+	y = y < 0 ? -y : y;
+	z = z < 0 ? -z : z;
+
+	while (x > 0 || y > 0 || z > 0) {
+
+		if ((x % 3 == 1) + (y % 3 == 1) + (z % 3 == 1) >= 2) {
+			result = ' ';
+			break;
+		}
+
+		x /= 3;
+		y /= 3;
+		z /= 3;
 	}
 
 	return result;

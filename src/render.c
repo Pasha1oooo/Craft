@@ -9,46 +9,49 @@
 #include "generator.h"
 #include "render.h"
 
-const struct block blocks[BLOCK_TYPES_AMOUNT] = {{{255, 255, 255, 255}, '#'},
-                                                 {{0  , 0  , 0  , 255}, ' '},
-                                                 {{255, 0  , 255, 255}, '`'},
-                                                 {{255, 255, 0  , 255}, '-'},
-                                                 {{0  , 255, 255, 255}, '@'},
-                                                 {{255,   0, 0  , 255}, '#'},
-                                                 {{0  , 255, 0  , 255}, '&'},
-                                                 {{0  , 0  , 255, 255}, '.'}};
+const struct block blocks[BLOCK_TYPES_AMOUNT] = {
+	{{255, 255, 255, 255}, '#'},
+	{{0  , 0  , 0  , 255}, ' '},
+	{{255, 0  , 255, 255}, '`'},
+	{{255, 255, 0  , 255}, '-'},
+	{{0  , 255, 255, 255}, '@'},
+	{{255,   0, 0  , 255}, '#'},
+	{{0  , 255, 0  , 255}, '&'},
+	{{0  , 0  , 255, 255}, '.'}
+};
 
 float vertices[] = {
-/* coordinates                    color               texture */
- 0.5f,  0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        1.0f, 1.0f,
--0.5f,  0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        0.0f, 1.0f,
- 0.5f, -0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        1.0f, 0.0f,
--0.5f, -0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        0.0f, 0.0f,
+	/* coordinates                    color               texture */
+	 0.5f,  0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        1.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,        0.0f, 0.0f, 1.0f,        0.0f, 0.0f,
 
- 0.5f,  0.5f,  0.5f,        0.0f, 1.0f, 0.0f,        1.0f, 1.0f,
- 0.5f, -0.5f,  0.5f,        0.0f, 1.0f, 0.0f,        0.0f, 1.0f,
- 0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 0.0f,        1.0f, 0.0f,
- 0.5f, -0.5f, -0.5f,        0.0f, 1.0f, 0.0f,        0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,        0.0f, 1.0f, 0.0f,        1.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,        0.0f, 1.0f, 0.0f,        0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 0.0f,        1.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f,        0.0f, 1.0f, 0.0f,        0.0f, 0.0f,
 
- 0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 1.0f,
--0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 1.0f,
- 0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 0.0f,
--0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 0.0f,
 
- 0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        1.0f, 1.0f,
--0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        0.0f, 1.0f,
- 0.5f, -0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        1.0f, 0.0f,
--0.5f, -0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        0.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        1.0f, 1.0f,
+	-0.5f,  0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        1.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,        0.0f, 1.0f, 1.0f,        0.0f, 0.0f,
 
--0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 1.0f,
--0.5f, -0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 1.0f,
--0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 0.0f,
--0.5f, -0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 1.0f,
+	-0.5f,  0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        1.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,        1.0f, 0.0f, 1.0f,        0.0f, 0.0f,
 
- 0.5f, -0.5f,  0.5f,        1.0f, 1.0f, 0.0f,        1.0f, 1.0f,
--0.5f, -0.5f,  0.5f,        1.0f, 1.0f, 0.0f,        0.0f, 1.0f,
- 0.5f, -0.5f, -0.5f,        1.0f, 1.0f, 0.0f,        1.0f, 0.0f,
--0.5f, -0.5f, -0.5f,        1.0f, 1.0f, 0.0f,        0.0f, 0.0f};
+	 0.5f, -0.5f,  0.5f,        1.0f, 1.0f, 0.0f,        1.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,        1.0f, 1.0f, 0.0f,        0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,        1.0f, 1.0f, 0.0f,        1.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,        1.0f, 1.0f, 0.0f,        0.0f, 0.0f
+};
 
 unsigned int indices[] = {
 	0, 1, 2,
@@ -67,53 +70,55 @@ unsigned int indices[] = {
 	17, 18, 19,
 
 	20, 21, 22,
-	21, 22, 23};
+	21, 22, 23
+};
+
 float vertices2[] = {
-    // Передняя грань
-     0.52f,  0.52f,  0.52f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
-    -0.52f,  0.52f,  0.52f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
-     0.52f, -0.52f,  0.52f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,
-    -0.52f, -0.52f,  0.52f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+	// Передняя грань
+	 0.55f,  0.55f,  0.55f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+	-0.55f,  0.55f,  0.55f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+	 0.55f, -0.55f,  0.55f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+	-0.55f, -0.55f,  0.55f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
 
-    // Правая грань
-     0.52f,  0.52f,  0.52f,   0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
-     0.52f, -0.52f,  0.52f,   0.0f, 1.0f, 0.0f,   0.0f, 1.0f,
-     0.52f,  0.52f, -0.52f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
-     0.52f, -0.52f, -0.52f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+	// Правая грань
+	 0.55f,  0.55f,  0.55f,   0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+	 0.55f, -0.55f,  0.55f,   0.0f, 1.0f, 0.0f,   0.0f, 1.0f,
+	 0.55f,  0.55f, -0.55f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+	 0.55f, -0.55f, -0.55f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
 
-    // Верхняя грань
-     0.52f,  0.52f,  0.52f,   1.0f, 0.0f, 1.0f,   1.0f, 1.0f,
-    -0.52f,  0.52f,  0.52f,   1.0f, 0.0f, 1.0f,   0.0f, 1.0f,
-     0.52f,  0.52f, -0.52f,   1.0f, 0.0f, 1.0f,   1.0f, 0.0f,
-    -0.52f,  0.52f, -0.52f,   1.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+	// Верхняя грань
+	 0.55f,  0.55f,  0.55f,   1.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+	-0.55f,  0.55f,  0.55f,   1.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+	 0.55f,  0.55f, -0.55f,   1.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+	-0.55f,  0.55f, -0.55f,   1.0f, 0.0f, 1.0f,   0.0f, 0.0f,
 
-    // Задняя грань
-     0.52f,  0.52f, -0.52f,   0.0f, 1.0f, 1.0f,   1.0f, 1.0f,
-    -0.52f,  0.52f, -0.52f,   0.0f, 1.0f, 1.0f,   0.0f, 1.0f,
-     0.52f, -0.52f, -0.52f,   0.0f, 1.0f, 1.0f,   1.0f, 0.0f,
-    -0.52f, -0.52f, -0.52f,   0.0f, 1.0f, 1.0f,   0.0f, 0.0f,
+	// Задняя грань
+	0.55f,  0.55f, -0.55f,   0.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+	-0.55f,  0.55f, -0.55f,   0.0f, 1.0f, 1.0f,   0.0f, 1.0f,
+	 0.55f, -0.55f, -0.55f,   0.0f, 1.0f, 1.0f,   1.0f, 0.0f,
+	-0.55f, -0.55f, -0.55f,   0.0f, 1.0f, 1.0f,   0.0f, 0.0f,
 
-    // Левая грань
-    -0.52f,  0.52f,  0.52f,   1.0f, 0.0f, 1.0f,   1.0f, 1.0f,
-    -0.52f, -0.52f,  0.52f,   1.0f, 0.0f, 1.0f,   0.0f, 1.0f,
-    -0.52f,  0.52f, -0.52f,   1.0f, 0.0f, 1.0f,   1.0f, 0.0f,
-    -0.52f, -0.52f, -0.52f,   1.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+	// Левая грань
+	-0.55f,  0.55f,  0.55f,   1.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+	-0.55f, -0.55f,  0.55f,   1.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+	-0.55f,  0.55f, -0.55f,   1.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+	-0.55f, -0.55f, -0.55f,   1.0f, 0.0f, 1.0f,   0.0f, 0.0f,
 
-    // Нижняя грань
-     0.52f, -0.52f,  0.52f,   1.0f, 1.0f, 0.0f,   1.0f, 1.0f,
-    -0.52f, -0.52f,  0.52f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,
-     0.52f, -0.52f, -0.52f,   1.0f, 1.0f, 0.0f,   1.0f, 0.0f,
-    -0.52f, -0.52f, -0.52f,   1.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+	// Нижняя грань
+	 0.55f, -0.55f,  0.55f,   1.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+	-0.55f, -0.55f,  0.55f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,
+	 0.55f, -0.55f, -0.55f,   1.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+	-0.55f, -0.55f, -0.55f,   1.0f, 1.0f, 0.0f,   0.0f, 0.0f,
 };
 
 unsigned int indices2[] = {
-        0, 1, 2,  1, 2, 3,
-        4, 5, 6,  5, 6, 7,
-        8, 9,10,  9,10,11,
-        12,13,14, 13,14,15,
-        16,17,18, 17,18,19,
-        20,21,22, 21,22,23
-    };
+	0, 1, 2,  1, 2, 3,
+	4, 5, 6,  5, 6, 7,
+	8, 9,10,  9,10,11,
+	12,13,14, 13,14,15,
+	16,17,18, 17,18,19,
+	20,21,22, 21,22,23
+};
 void create_window(GLFWwindow **window, int fb_width , int fb_height)
 {
 	glfwInit();
@@ -139,7 +144,11 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 }
 
 
-void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO, unsigned int *EBO, unsigned int *instanceVBO, unsigned int *VBO_highlight, unsigned int *VAO_highlight, unsigned int *EBO_highlight)
+void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
+                            unsigned int *EBO, unsigned int *instanceVBO,
+                            unsigned int *VBO_highlight,
+                            unsigned int *VAO_highlight,
+                            unsigned int *EBO_highlight)
 {
 	glGenVertexArrays(1, VAO);
 	glGenBuffers(1, EBO);
@@ -148,85 +157,119 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO, unsigned int *
 	glGenBuffers(1, instanceVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, *instanceVBO);
 
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-	                                                            (void *)0);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
+	                     sizeof(mat4), (void *)0);
 	glEnableVertexAttribArray(2);
 	glVertexAttribDivisor(2, 1);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-	                                          (void *)(4 * sizeof(float)));
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE,
+	                      sizeof(mat4), (void *)(4 * sizeof(float)));
 	glEnableVertexAttribArray(3);
 	glVertexAttribDivisor(3, 1);
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-	                                          (void *)(8 * sizeof(float)));
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE,
+	                      sizeof(mat4), (void *)(8 * sizeof(float)));
 	glEnableVertexAttribArray(4);
 	glVertexAttribDivisor(4, 1);
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(mat4),
-	                                         (void *)(12 * sizeof(float)));
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE,
+	                      sizeof(mat4), (void *)(12 * sizeof(float)));
 	glEnableVertexAttribArray(5);
 	glVertexAttribDivisor(5, 1);
 
 	glGenBuffers(1, VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, *VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
-	                                                       GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices),
+	             vertices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-	                                                       GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-	                                                            (void *)0);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices),
+	             indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+	                      8 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-	                                          (void *)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+	                      8 * sizeof(float), (void *)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-	                                          (void *)(6 * sizeof(float)));
+	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE,
+	                      8 * sizeof(float), (void *)(6 * sizeof(float)));
 	glEnableVertexAttribArray(6);
 	glGenVertexArrays(1, VAO_highlight);
-    glGenBuffers(1, VBO_highlight);
-    glGenBuffers(1, EBO_highlight);
-    glBindVertexArray(*VAO_highlight);
-    glBindBuffer(GL_ARRAY_BUFFER, *VBO_highlight);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO_highlight);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices2), indices2, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-    glEnableVertexAttribArray(6);
+
+	glGenBuffers(1, VBO_highlight);
+	glGenBuffers(1, EBO_highlight);
+
+	glBindVertexArray(*VAO_highlight);
+
+	glBindBuffer(GL_ARRAY_BUFFER, *VBO_highlight);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2),
+	             vertices2, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO_highlight);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices2),
+	             indices2, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+	                      8 * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+	                      8 * sizeof(float), (void *)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+	                     (void *)(6 * sizeof(float)));
+	glEnableVertexAttribArray(6);
 
 	return;
 }
 
-void render_chunks(struct chunk *chunks, unsigned int texture,
-                                                              unsigned int VAO)
+void render_chunks(struct chunk *chunks, unsigned int texture_stone, unsigned int texture_ore, unsigned int VAO)
 {
 	const int CHUNKS_AMOUNT = pow(2 * RENDER_DISTANCE - 1, 3);
 	int block_amount = pow(CHUNK_SIZE, 3);
 	mat4 *modelMatrices;
+	int ID = 0;
+	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
 
 	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
-		modelMatrices = draw_chunk(&(chunks[i]));
+		mat4 *modelMatrices_stone = (mat4 *)calloc(BLOCKS_AMOUNT,
+		                                           sizeof(mat4));
+		mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_AMOUNT,
+		                                         sizeof(mat4));
+		draw_chunk(&(chunks[i]), &ID, &modelMatrices_stone,
+		           &modelMatrices_ore);
 
-		glBindTexture(GL_TEXTURE_2D, texture);
 		glBindVertexArray(VAO);
-		glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4),
-		                                modelMatrices, GL_STATIC_DRAW);
+		glBindTexture(GL_TEXTURE_2D, texture_stone);
+		glBufferData(GL_ARRAY_BUFFER,
+		             block_amount * sizeof(mat4),
+		             modelMatrices_stone,
+		             GL_STATIC_DRAW);
 
 		glDrawElementsInstanced(GL_TRIANGLES,
 		                        sizeof(indices) / sizeof(indices[0]),
-		                        GL_UNSIGNED_INT, 0, block_amount);
-		free(modelMatrices);
+		                        GL_UNSIGNED_INT, 0,
+		                        block_amount);
+
+		glBindTexture(GL_TEXTURE_2D, texture_ore);
+		glBufferData(GL_ARRAY_BUFFER,
+		             block_amount * sizeof(mat4),
+		             modelMatrices_ore,
+		             GL_STATIC_DRAW);
+
+		glDrawElementsInstanced(GL_TRIANGLES,
+		                        sizeof(indices) / sizeof(indices[0]),
+		                        GL_UNSIGNED_INT, 0,
+		                        block_amount);
+
+		free(modelMatrices_ore);
+		free(modelMatrices_stone);
 	}
 
 	return;
 }
 
-mat4 *draw_chunk(struct chunk *chunk)
+void draw_chunk(struct chunk *chunk, int *ID, mat4 **stone, mat4 **ore)
 {
 	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
-	mat4 *modelMatrices = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
+	// TODO remove calloc
+	// mat4 *modelMatrices_stone = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
+	// mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
 
 	for (int i = 0; i < BLOCKS_AMOUNT; i++) {
 		if (chunk->chunk_data[i] == '*') {
@@ -234,18 +277,35 @@ mat4 *draw_chunk(struct chunk *chunk)
 			vec3 offset;
 
 			offset[0] = (float)(chunk->pos->x * CHUNK_SIZE +
-			                                     (i % CHUNK_SIZE));
+			                    (i % CHUNK_SIZE));
 			offset[1] = (float)(chunk->pos->y * CHUNK_SIZE +
-			                       (i / CHUNK_SIZE) % CHUNK_SIZE);
+			                    (i / CHUNK_SIZE) % CHUNK_SIZE);
 			offset[2] = (float)(chunk->pos->z * CHUNK_SIZE +
-			                        i / (CHUNK_SIZE * CHUNK_SIZE));
+			                    i / (CHUNK_SIZE * CHUNK_SIZE));
 
 			glm_translate(model, offset);
-			glm_mat4_copy(model, modelMatrices[i]);
+			glm_mat4_copy(model, (*stone)[i]);
+			*ID = 1;
+		}
+		if (chunk->chunk_data[i] == '#') {
+			mat4 model = GLM_MAT4_IDENTITY_INIT;
+			vec3 offset;
+
+			offset[0] = (float)(chunk->pos->x * CHUNK_SIZE +
+			                    (i % CHUNK_SIZE));
+			offset[1] = (float)(chunk->pos->y * CHUNK_SIZE +
+			                    (i / CHUNK_SIZE) % CHUNK_SIZE);
+			offset[2] = (float)(chunk->pos->z * CHUNK_SIZE +
+			                    i / (CHUNK_SIZE * CHUNK_SIZE));
+
+			glm_translate(model, offset);
+			glm_mat4_copy(model, (*ore)[i]);
+
+			*ID = 2;
 		}
 	}
 
-	return modelMatrices;
+	return;
 }
 
 void putpixel(unsigned char *pixels, float pixels_depth)
@@ -264,7 +324,9 @@ void putpixel(unsigned char *pixels, float pixels_depth)
 
 		if (is_same_color[0] && is_same_color[1] && is_same_color[2]) {
 			printf("\033[1;48;2;%d;%d;%dm%c\033[0m", background,
-			              background, background, blocks[i].ascii);
+			                                         background,
+			                                         background,
+			                                      blocks[i].ascii);
 		}
 	}
 

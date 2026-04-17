@@ -1,6 +1,6 @@
 # Компилятор и флаги
 CC = gcc
-CXXFLAGS = -g -lm -D _DEBUG -ggdb3 -O3 -Wall -Wextra \
+CXXFLAGS = -g -lm -D _DEBUG -ggdb3 -O3 -Wall -Wextra -D_GNU_SOURCE \
   -Waggressive-loop-optimizations -Wmissing-declarations -Wcast-align -Wcast-qual \
   -Wchar-subscripts -Wconversion -Wempty-body -Wfloat-equal \
   -Wformat-nonliteral -Wformat-security -Wformat-signedness \
@@ -25,13 +25,15 @@ OBJECTS = $(SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 TARGET = $(BIN_DIR)/program
 
 # Флаги линковки
-LDFLAGS = -lglfw -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm
-
+#LDFLAGS = -lglfw -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -lnotcurses -D_GNU_SOURCE
+#LDFLAGS = -lglfw -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -lnotcurses
 # Флаги для генерации зависимостей
 DEPFLAGS = -MMD -MP
-
+# Уберите -lnotcurses и -D_GNU_SOURCE из этих флагов
+CFLAGS = $(shell pkg-config --cflags notcurses) $(CUSTOM_WARNINGS)
+LDFLAGS = $(shell pkg-config --libs notcurses) -lglfw -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -lnotcurses
 # Комбинация всех флагов
-CFLAGS = $(CXXFLAGS) $(DEPFLAGS)
+#CFLAGS = $(CXXFLAGS) $(DEPFLAGS)
 
 # Цель по умолчанию
 all: $(TARGET)

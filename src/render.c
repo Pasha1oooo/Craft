@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 #include "generator.h"
 #include "render.h"
+#include "logic.h"
 
 const struct block blocks[BLOCK_TYPES_AMOUNT] = {{{255, 255, 255, 255}, '#'},
                                                  {{0  , 0  , 0  , 255}, ' '},
@@ -296,4 +297,65 @@ void putpixel(unsigned char *pixels, float pixels_depth)
 	}
 
 	return;
+}
+
+struct notcurses* notcurses_prepare() {
+	setlocale(LC_ALL, "");
+	struct notcurses* nc = notcurses_init(NULL, stdout);
+	return nc;
+}
+
+void notcurses_render_ascii(struct notcurses* nc, struct ncplane* n, unsigned char *frame_buffer, float *depth_buffer) {
+	for (int y = 0; y < FB_HEIGHT; y++) {               // нормальный порядок: сверху вниз
+        for (int x = 0; x < FB_WIDTH; x++) {
+			//ncplane_cursor_move_yx(n, y, x);
+
+			int idx = (y * FB_WIDTH + x) * 4;
+			float depth = depth_buffer[y * FB_WIDTH + x];
+			unsigned char *pixels = frame_buffer + idx;
+
+			int background = (int)(255 * (1 / exp(150 - 150 * depth)));
+			int is_same_color[3];
+
+			if (background < 0)
+				background = 0;
+			if (background > 200)
+				background = 200;
+
+			for (int i = 0; i < BLOCK_TYPES_AMOUNT; i++) {
+				for (int j = 0; j < 3; j++)
+					is_same_color[j] = pixels[j] == blocks[i].color[j];
+
+				if (is_same_color[0] && is_same_color[1] && is_same_color[2]) {
+					ncplane_set_bg_rgb8(n, background, background, background);
+					ncplane_putchar_yx(n, y, x, blocks[i].ascii);
+				}
+			}
+		}
+	}
+}
+
+void stat_render(struct notcurses* nc, struct ncplane* n, struct time time){
+	struct ncplane_options opts = {
+        .y = 0,              // Строка 5 (относительно родителя)
+        .x = FB_WIDTH - 80,             // Колонка 10
+        .rows = 20,          // Высота 10 строк
+        .cols = 80,          // Ширина 20 столбцов
+        .userptr = NULL,     // Без пользовательских данных
+        .name = "child",     // Имя для отладки
+        .resizecb = NULL,    // Без колбэка
+        .flags = 0,          // Без флагов
+    };
+
+    // Создаём дочернюю плоскость
+    struct ncplane* child_plane = ncplane_create(n, &opts);
+
+    // Пример вывода текста в дочерней плоскости
+	for (int y = 0; y < opts.rows; y++) {               // нормальный порядок: сверху вниз
+        for (int x = 0; x < opts.cols; x++) {
+			ncplane_set_bg_rgb8(child_plane, 0, 0, 0);
+			ncplane_putchar_yx(child_plane, y, x, ' ');
+		}
+	}
+	ncplane_printf_yx(child_plane, 0, 0, "FPS: %d", calculate_fps(&time));
 }

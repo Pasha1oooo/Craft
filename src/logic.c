@@ -56,7 +56,7 @@ int is_chunk_changed(vec3 player_pos, struct position *prev_chunk) //2ptr
 	return is_changed;
 }
 
-void calculate_fps(struct time *time)
+int calculate_fps(struct time *time)
 {
 	float delta_time;
 
@@ -68,9 +68,7 @@ void calculate_fps(struct time *time)
 		time->fps = (int)((float)time->frame_counter / delta_time);
 		time->start = glfwGetTime();
 		time->frame_counter = 0;
-
-		printf("\033[H");
-		printf("\nFPS: %d \n", time->fps);
+		return time->fps;
 	}
 }
 
@@ -111,9 +109,9 @@ void processInput(GLFWwindow * window, struct player *player, struct chunk **chu
 	    player->position[1] -= player->speed * player->head.cameraDirection[0];
 	}
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-	    player->position[2] += player->speed;
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 	    player->position[2] -= player->speed;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+	    player->position[2] += player->speed;
 	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
 	    player->head.FOV = 10.0f;
 	else player->head.FOV = 90.0f;
@@ -136,12 +134,12 @@ void processInput(GLFWwindow * window, struct player *player, struct chunk **chu
 	    }
 	}
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-    	player->head.pitch += 5.0f;
+    	player->head.pitch -= 5.0f;
     	if (player->head.pitch > 89.0f) player->head.pitch = 89.0f;
     	update_camera_direction(&player->head);
 	}
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-	    player->head.pitch -= 5.0f;
+	    player->head.pitch += 5.0f;
 	    if (player->head.pitch < -89.0f) player->head.pitch = -89.0f;
 	    update_camera_direction(&player->head);
 	}

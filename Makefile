@@ -11,7 +11,10 @@ CXXFLAGS = -g -lm -D _DEBUG -ggdb3 -O3 -Wall -Wextra -D_GNU_SOURCE \
   -Wno-missing-field-initializers -Wno-narrowing -Wno-varargs -Wstack-protector -fcheck-new \
   -fstack-protector -fstrict-overflow -flto-odr-type-merging -fno-omit-frame-pointer \
   -Wstack-usage=8192 -pie -fPIE -Werror=vla
-  #-fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,leak,nonnull-attribute,null,object-size,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
+
+CXXFLAGS+=$(shell pkg-config --cflags cglm)
+CXXFLAGS+=$(shell pkg-config --cflags glfw3)
+CXXFLAGS+=$(shell pkj-config --cflags notcurses)
 
 # Директории
 SRC_DIR = src
@@ -24,16 +27,13 @@ SOURCES = $(wildcard $(SRC_DIR)/*.c)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 TARGET = $(BIN_DIR)/program
 
-# Флаги линковки
-#LDFLAGS = -lglfw -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -lnotcurses -D_GNU_SOURCE
-#LDFLAGS = -lglfw -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -lnotcurses
 # Флаги для генерации зависимостей
 DEPFLAGS = -MMD -MP
-# Уберите -lnotcurses и -D_GNU_SOURCE из этих флагов
-CFLAGS = $(shell pkg-config --cflags notcurses) $(CUSTOM_WARNINGS)
-LDFLAGS = $(shell pkg-config --libs notcurses) -lglfw -lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm -lnotcurses
-# Комбинация всех флагов
-#CFLAGS = $(CXXFLAGS) $(DEPFLAGS)
+
+LDFLAGS = -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lm
+LDFLAGS+=$(shell pkg-config --libs cglm)
+LDFLAGS+=$(shell pkg-config --libs glfw3)
+LDFLAGS+=$(shell pkg-config --libs notcurses)
 
 # Цель по умолчанию
 all: $(TARGET)

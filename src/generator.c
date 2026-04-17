@@ -16,13 +16,13 @@ const char FILE_PATH[] = "saves/";
 struct chunk *init_chunks(void)
 {
 	const int SIDE = 2 * RENDER_DISTANCE - 1;
-	struct chunk *loaded_chunks = (struct chunk *)calloc((size_t)pow(SIDE, 3),
-	                                                 sizeof(struct chunk));
+	struct chunk *loaded_chunks = (struct chunk *)calloc((size_t)pow(SIDE,
+	                                             3), sizeof(struct chunk));
 
 	for (int i = 0; i < (int)pow(SIDE, 3); i++) {
 
 		loaded_chunks[i].chunk_data = (char *)calloc(
-		                    (size_t)pow(CHUNK_SIZE, 3), sizeof(char));
+		                     (size_t)pow(CHUNK_SIZE, 3), sizeof(char));
 
 		loaded_chunks[i].pos = (struct position *)calloc(1,
 		                                      sizeof(struct position));
@@ -61,13 +61,13 @@ void get_chunks(struct chunk *chunks, vec3 player_vector_pos)
 		local_chunk_pos.z = (i / SIDE) / SIDE;
 
 		chunks[i].pos->x = player_pos.x / CHUNK_SIZE +
-		                                  local_chunk_pos.x - SIDE / 2;
+		                   local_chunk_pos.x - SIDE / 2;
 
 		chunks[i].pos->y = player_pos.y / CHUNK_SIZE +
-		                                  local_chunk_pos.y - SIDE / 2;
+		                   local_chunk_pos.y - SIDE / 2;
 
 		chunks[i].pos->z = player_pos.z / CHUNK_SIZE +
-		                                  local_chunk_pos.z - SIDE / 2;
+		                   local_chunk_pos.z - SIDE / 2;
 
 		chunks[i].pos->x -= player_pos.x < 0 ? 1 : 0;
 		chunks[i].pos->y -= player_pos.y < 0 ? 1 : 0;
@@ -152,7 +152,9 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 		point[0] = (float)x / 10.001f;
 		point[1] = (float)y / 10.001f;
 		point[2] = (float)z / 10.001f;
+
 		perlin_value = glm_perlin_vec3(point);
+
 		if (perlin_value <= -0.4f) {
 			result = '#';
 		}

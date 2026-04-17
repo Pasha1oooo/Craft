@@ -13,21 +13,20 @@
 #include "texture.h"
 #include "logic.h"
 
-//TODO notcurses
-
-
 int main(void)
 {
-	unsigned char *frame_buffer = (unsigned char*)calloc(FB_WIDTH * FB_HEIGHT,
-	                                                        sizeof(float));
+	unsigned char *frame_buffer = (unsigned char*)calloc(FB_WIDTH *
+	                                                     FB_HEIGHT,
+	                                                     sizeof(float));
 	float *depth_buffer = (float*)calloc(FB_WIDTH * FB_HEIGHT,
-	                                                        sizeof(float));
+	                                     sizeof(float));
 	GLFWwindow *window;
 	struct position saved_chunk_pos = {.x = 0, .y = 0, .z = 0};
-	unsigned int modelLoc, viewLoc, projectionLoc; // modelLoc?
+	unsigned int modelLoc, viewLoc, projectionLoc;
 	unsigned int VBO, VAO, EBO, instanceVBO;
 	unsigned int VBO_highlight, VAO_highlight, EBO_highlight;
-	unsigned int shaderProgram, shaderProgram2, texture, texture2, texture3;
+	unsigned int shaderProgram, shaderProgram2;
+	unsigned int texture, texture2, texture3;
 	vec3 target;
 	mat4 view = GLM_MAT4_IDENTITY_INIT;
 	struct time time;
@@ -41,7 +40,11 @@ int main(void)
 		return 0;
 	}
 
-	prepare_gl_environment(&VBO, &VAO, &EBO, &instanceVBO, &VBO_highlight, &VAO_highlight, &EBO_highlight);
+	prepare_gl_environment(&VBO, &VAO, &EBO,
+	                       &instanceVBO,
+	                       &VBO_highlight,
+	                       &VAO_highlight,
+	                       &EBO_highlight);
 
 	prepare_texture(&texture, "a.png");
 	prepare_texture(&texture2, "black.png");
@@ -65,8 +68,6 @@ int main(void)
 
 	while(!glfwWindowShouldClose(window)) {
 
-
-
 		processInput(window, &player, &loaded_chunks, selected_block);
 
 		glEnable(GL_DEPTH_TEST);
@@ -77,20 +78,32 @@ int main(void)
 		glUniform1i(glGetUniformLocation(shaderProgram, "Texture"), 0);
 
 		glm_vec3_copy(player.position, player.head.cameraPos);
-		glm_vec3_add(player.head.cameraPos, player.head.cameraDirection, target);
-		glm_lookat(player.head.cameraPos, target, player.head.cameraUp, view);
+		glm_vec3_add(player.head.cameraPos,
+		             player.head.cameraDirection,
+		             target);
+
+		glm_lookat(player.head.cameraPos,
+		           target,
+		           player.head.cameraUp,
+		           view);
 
 
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float*)view);
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float *)view);
 		mat4 projection;
 		glm_perspective(glm_rad(player.head.FOV), (float)FB_WIDTH /
-		                  (FB_HEIGHT+150), 0.1f, 10000.0f, projection);
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
-		                                           (float*)projection);
+		                                          (FB_HEIGHT+150),
+		                0.1f, 10000.0f, projection);
 
-		if (is_chunk_changed(player.head.cameraPos, &saved_chunk_pos)) {
+		glUniformMatrix4fv(projectionLoc,
+		                   1, GL_FALSE,
+		                   (float *)projection);
+
+		if (is_chunk_changed(player.head.cameraPos,
+		                     &saved_chunk_pos)) {
+
 			get_chunks(loaded_chunks, player.head.cameraPos);
-			save_chunk_pos(&player.head.cameraPos, &saved_chunk_pos);
+			save_chunk_pos(&player.head.cameraPos,
+			               &saved_chunk_pos);
 		}
 
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
@@ -98,33 +111,58 @@ int main(void)
 		render_chunks(loaded_chunks, texture, texture3, VAO);
 		glm_vec3_copy(player.position, player.head.cameraPos);
 
+		int is_block_selected = select_block(player,
+		                                     loaded_chunks,
+		                                     &selected_block);
 
-        if (select_block(player, loaded_chunks, &selected_block) == 1) {
-            glUseProgram(shaderProgram2);
-            glUniformMatrix4fv(glGetUniformLocation(shaderProgram2, "view"), 1, GL_FALSE, (float*)view);
-            glUniformMatrix4fv(glGetUniformLocation(shaderProgram2, "projection"), 1, GL_FALSE, (float*)projection);
-            mat4 model_highlight = GLM_MAT4_IDENTITY_INIT;
-            glm_translate(model_highlight, (vec3){selected_block.x , selected_block.y, selected_block.z});
-            glUniformMatrix4fv(glGetUniformLocation(shaderProgram2, "model"), 1, GL_FALSE, (float*)model_highlight);
-            glBindVertexArray(VAO_highlight);
-            glBindTexture(GL_TEXTURE_2D, texture2);
-            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-            glUseProgram(shaderProgram);
-        }
+		if (is_block_selected) {
+			glUseProgram(shaderProgram2);
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,
+			                                        "view"),
+			                   1, GL_FALSE,
+			                   (float *)view);
+
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,
+			                                        "projection"),
+			                   1, GL_FALSE,
+			                   (float *)projection);
+
+			mat4 model_highlight = GLM_MAT4_IDENTITY_INIT;
+
+			glm_translate(model_highlight, (vec3){selected_block.x,
+			                                     selected_block.y,
+			                                    selected_block.z});
+
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,
+			                                        "model"),
+			                   1, GL_FALSE,
+			                   (float *)model_highlight);
+
+			glBindVertexArray(VAO_highlight);
+			glBindTexture(GL_TEXTURE_2D, texture2);
+			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+			glUseProgram(shaderProgram);
+		}
 
 		glfwSwapBuffers(window);
-		//ASCII render part
 
 		glReadBuffer(GL_BACK);
-		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT, GL_RGBA,
-		                                     GL_UNSIGNED_BYTE, frame_buffer);
 		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT,
-		                   GL_DEPTH_COMPONENT, GL_FLOAT, depth_buffer);
+		             GL_RGBA, GL_UNSIGNED_BYTE,
+		             frame_buffer);
+
+		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT,
+		             GL_DEPTH_COMPONENT, GL_FLOAT,
+		             depth_buffer);
+
 		struct ncplane* n = notcurses_stdplane(nc);
+
 		notcurses_render_ascii(nc, n, frame_buffer, depth_buffer);
 		stat_render(nc, n, time);
 		notcurses_render(nc);
+
 		glfwPollEvents();
+
 		printf("\033[H");
 	}
 
@@ -138,8 +176,8 @@ int main(void)
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
 	glDeleteProgram(shaderProgram);
-	notcurses_stop(nc);
 
+	notcurses_stop(nc);
 	glfwTerminate();
 
 	return 0;

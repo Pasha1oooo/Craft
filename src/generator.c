@@ -16,8 +16,8 @@ const char FILE_PATH[] = "saves/";
 struct chunk *init_chunks(void)
 {
 	const int SIDE = 2 * RENDER_DISTANCE - 1;
-	struct chunk *loaded_chunks = (struct chunk *)calloc((size_t)pow(SIDE,
-	                                             3), sizeof(struct chunk));
+	struct chunk *loaded_chunks = (struct chunk *)calloc((size_t)pow(SIDE, 3),
+	                                                 sizeof(struct chunk));
 
 	for (int i = 0; i < (int)pow(SIDE, 3); i++) {
 
@@ -132,7 +132,7 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	int result = ' ';
 	vec3 point, biome_point;
 	float perlin_value, biome_value;
-/*
+
 	point[0] = x / 20.0f;
 	point[1] = y / 20.0f;
 	point[2] = z / 10.0f;
@@ -156,25 +156,6 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 		if (perlin_value <= -0.4f) {
 			result = '#';
 		}
-	}
-*/
-
-	result = '*';
-
-	x = x < 0 ? -x : x;
-	y = y < 0 ? -y : y;
-	z = z < 0 ? -z : z;
-
-	while (x > 0 || y > 0 || z > 0) {
-
-		if ((x % 3 == 1) + (y % 3 == 1) + (z % 3 == 1) >= 2) {
-			result = ' ';
-			break;
-		}
-
-		x /= 3;
-		y /= 3;
-		z /= 3;
 	}
 
 	return result;

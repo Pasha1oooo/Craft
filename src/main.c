@@ -13,6 +13,13 @@
 #include "texture.h"
 #include "logic.h"
 
+struct entity{
+	float x;
+	float y;
+	float z;
+	float angle;
+};
+
 const float PLAYER_WIDTH = 0.6f;
 const float PLAYER_HEIGHT = 1.8f;
 const float EYES_HEIGHT = 1.6f;
@@ -124,10 +131,10 @@ int main(void)
 	unsigned int VBO, VAO, EBO, instanceVBO;
 	unsigned int VBO_highlight, VAO_highlight, EBO_highlight;
 	unsigned int shaderProgram, shaderProgram2;
-	unsigned int texture, texture2, texture3;
+	unsigned int texture, texture2, texture3, texture4;
 	vec3 target;
 	mat4 view = GLM_MAT4_IDENTITY_INIT;
-	struct time time;
+	struct time time_;
 	struct player player;
 	struct chunk *loaded_chunks = init_chunks();
 
@@ -148,6 +155,7 @@ int main(void)
 	prepare_texture(&texture, "a.png");
 	prepare_texture(&texture2, "black.png");
 	prepare_texture(&texture3, "c.png");
+	prepare_texture(&texture4, "d.png");
 
 	shaderProgram = prepare_shaders();
 	shaderProgram2 = prepare_shaders2();
@@ -160,11 +168,11 @@ int main(void)
 
 	player = create_player();
 
-	time.frame_counter = 0;
-	time.start = glfwGetTime();
+	time_.frame_counter = 0;
+	time_.start = glfwGetTime();
 	struct position selected_block;
 	selected_block.x = -1; selected_block.y = -1; selected_block.z = -1;
-
+	struct entity entity = {0,0,0,0.3};
 	while(!glfwWindowShouldClose(window)) {
 		mat4 projection;
 
@@ -216,17 +224,51 @@ int main(void)
 		                                     loaded_chunks,
 		                                     &selected_block);
 
-		if (is_block_selected) {
+
+
+		entity.x+=0.02*(player.position[0] - entity.x);
+		entity.y+=0.02*(player.position[1] - entity.y);
+		entity.z+=0.02*(player.position[2] - entity.z);
+		int a = 0;
+		for(int i = 0; i < pow(2 * RENDER_DISTANCE - 1, 3); i++){
+			if((int)floor(entity.x / 16.0f) == loaded_chunks[i].pos->x && (int)floor(entity.y / 16.0f) == loaded_chunks[i].pos->y && (int)floor(entity.z / 16.0f) == loaded_chunks[i].pos->z) a = 1;
+		}
+		if (a != 0) {
 			glUseProgram(shaderProgram2);
-			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,
-			                                        "view"),
-			                   1, GL_FALSE,
-			                   (float *)view);
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,"view"),1, GL_FALSE,(float *)view);
+
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,"projection"),1, GL_FALSE,(float *)projection);
+
+			mat4 model_highlight = GLM_MAT4_IDENTITY_INIT;
+
+			glm_translate(model_highlight, (vec3){entity.x,
+			                                     entity.y,
+			                                    entity.z});
+			glm_rotate(model_highlight, entity.angle,(vec3){0,0,1});
 
 			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,
-			                                        "projection"),
+			                                        "model"),
 			                   1, GL_FALSE,
-			                   (float *)projection);
+			                   (float *)model_highlight);
+
+			glBindVertexArray(VAO_highlight);
+			glBindTexture(GL_TEXTURE_2D, texture4);
+			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+			glUseProgram(shaderProgram);
+		}
+
+
+
+
+
+
+
+
+		if (is_block_selected) {
+			glUseProgram(shaderProgram2);
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,"view"),1, GL_FALSE,(float *)view);
+
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,"projection"),1, GL_FALSE,(float *)projection);
 
 			mat4 model_highlight = GLM_MAT4_IDENTITY_INIT;
 

@@ -7,6 +7,9 @@
 #include "logic.h"
 #include "generator.h"
 
+
+
+
 void save_chunk_pos(vec3 *player_pos, struct position *chunk_pos)
 {
 	chunk_pos->x = (int)(*player_pos)[0] / CHUNK_SIZE;
@@ -185,18 +188,10 @@ void processInput(GLFWwindow * window, struct player *player,
 	}
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
 		player->head.yaw-=5.0f;
-
-		if(player->head.yaw>=360)
-			player->head.yaw = 0;
-
 		update_camera_direction(&player->head);
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
 		player->head.yaw+=5.0f;
-
-		if(player->head.yaw<=-360)
-			player->head.yaw = 0;
-
 		update_camera_direction(&player->head);
 	}
 	if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS){

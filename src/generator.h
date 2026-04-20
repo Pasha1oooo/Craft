@@ -2,6 +2,7 @@
 #define GENERATOR_H
 
 #include <cglm/cglm.h>
+#include <math.h>
 
 extern const int CHUNK_SIZE;
 extern const int RENDER_DISTANCE;

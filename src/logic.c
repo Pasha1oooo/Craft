@@ -3,9 +3,9 @@
 #include "../include/glad/glad.h"
 #include <cglm/cglm.h>
 #include <GLFW/glfw3.h>
-#include "generator.h"
 #include "render.h"
 #include "logic.h"
+#include "generator.h"
 
 void save_chunk_pos(vec3 *player_pos, struct position *chunk_pos)
 {
@@ -33,26 +33,28 @@ int is_chunk_changed(vec3 player_pos, struct position *prev_chunk) //2ptr
 	current_chunk.y = (int)player_pos[1] / CHUNK_SIZE;
 	current_chunk.z = (int)player_pos[2] / CHUNK_SIZE;
 
-	if (player_pos[0] > 0) {
+	if (player_pos[0] >= 0) {
 		is_chunk_changed[0] = current_chunk.x != prev_chunk->x;
 	} else {
 		is_chunk_changed[0] = current_chunk.x - 1 != prev_chunk->x;
 	}
 
-	if (player_pos[1] > 0) {
+	if (player_pos[1] >= 0) {
 		is_chunk_changed[1] = current_chunk.y != prev_chunk->y;
 	} else {
 		is_chunk_changed[1] = current_chunk.y - 1 != prev_chunk->y;
 	}
 
-	if (player_pos[2] > 0) {
+	if (player_pos[2] >= 0) {
 		is_chunk_changed[2] = current_chunk.z != prev_chunk->z;
 	} else {
-		is_chunk_changed[2] = current_chunk.z - 1!= prev_chunk->z;
+		is_chunk_changed[2] = current_chunk.z - 1 != prev_chunk->z;
 	}
 
-	is_changed = is_chunk_changed[0] || is_chunk_changed[1] ||
-	                                                   is_chunk_changed[2];
+	is_changed = is_chunk_changed[0] ||
+	             is_chunk_changed[1] ||
+	             is_chunk_changed[2];
+
 	return is_changed;
 }
 
@@ -127,9 +129,9 @@ void processInput(GLFWwindow * window, struct player *player,
 		                       player->head.cameraDirection[0];
 	}
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		player->position[2] -= player->speed;
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		player->position[2] += player->speed;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+		player->position[2] -= player->speed;
 	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
 		player->head.FOV = 10.0f;
 	} else {
@@ -166,7 +168,7 @@ void processInput(GLFWwindow * window, struct player *player,
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-		player->head.pitch -= 5.0f;
+		player->head.pitch += 5.0f;
 
 		if (player->head.pitch > 89.0f)
 			player->head.pitch = 89.0f;
@@ -174,7 +176,7 @@ void processInput(GLFWwindow * window, struct player *player,
 		update_camera_direction(&player->head);
 	}
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-		player->head.pitch += 5.0f;
+		player->head.pitch -= 5.0f;
 
 		if (player->head.pitch < -89.0f)
 			player->head.pitch = -89.0f;
@@ -216,7 +218,7 @@ struct camera create_camera(void)
 	camera.pitch = 0.0f;
 	camera.yaw   = 90.0f;
 	camera.roll  = 0.0f;
-	camera.FOV = 90.0f;
+	camera.FOV   = 90.0f;
 
 	camera.cameraPos[0] = 0.0f;
 	camera.cameraPos[1] = 0.0f;
@@ -238,7 +240,7 @@ struct player create_player(void)
 	struct player player;
 
 	player.head = create_camera();
-	player.position[0] = 0;
+	player.position[0] = -4;
 	player.position[1] = 0;
 	player.position[2] = 1;
 	player.speed = 0.2f;
@@ -257,7 +259,7 @@ char get_world_block(struct position w, struct chunk *chunks, int count) {
 	int ly = w.y - cy * 16;
 	int lz = w.z - cz * 16;
 
-	int is_cx_equal_pos; 
+	int is_cx_equal_pos;
 	int j = 256 * lz + 16 * ly + lx;
 
 	for (int i = 0; i < count; i++) {

@@ -13,6 +13,104 @@
 #include "texture.h"
 #include "logic.h"
 
+const float PLAYER_WIDTH = 0.6f;
+const float PLAYER_HEIGHT = 1.8f;
+const float EYES_HEIGHT = 1.6f;
+const float BLOCK_SIZE = 1.0f;
+
+// optimize
+struct position box_box_intersect(struct chunk *chunks, struct player *player)
+{
+	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
+	const int CHUNKS_AMOUNT = pow(2 * RENDER_DISTANCE - 1, 3);
+	const float MIN_DIFF = 0.15f;
+	struct position is_intersect = {.x = 0, .y = 0, .z = 0};
+	struct position tmp_is_intersect;;
+	vec3 block_pos;
+	vec3 chunk_offset;
+	vec3 block_player_distance;
+	int intersection;
+
+	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
+		chunk_offset[0] = CHUNK_SIZE * (float)chunks[i].pos->x;
+		chunk_offset[1] = CHUNK_SIZE * (float)chunks[i].pos->y;
+		chunk_offset[2] = CHUNK_SIZE * (float)chunks[i].pos->z;
+
+		for (int j = 0; j < BLOCKS_AMOUNT; j++) {
+			if (chunks[i].chunk_data[j] == ' ')
+				continue;
+
+			block_pos[0] = chunk_offset[0] + j % CHUNK_SIZE;
+			block_pos[1] = chunk_offset[1] + (j / CHUNK_SIZE)
+			               % CHUNK_SIZE;
+			block_pos[2] = chunk_offset[2] + j / (CHUNK_SIZE *
+			                                      CHUNK_SIZE);
+
+			block_player_distance[0] = fabs(block_pos[0] -
+			                                player->position[0]);
+
+			block_player_distance[1] = fabs(block_pos[1] -
+			                                player->position[1]);
+
+			block_player_distance[2] = block_pos[2] -
+			                           player->position[2];
+
+			tmp_is_intersect.x = block_player_distance[0] <
+			                    (BLOCK_SIZE + PLAYER_WIDTH) / 2.0f;
+
+			tmp_is_intersect.y = block_player_distance[1] <
+			                    (BLOCK_SIZE + PLAYER_WIDTH) / 2.0f;
+
+			tmp_is_intersect.z = block_player_distance[2] <
+			                     BLOCK_SIZE / 2.0f +
+			                    (PLAYER_HEIGHT - EYES_HEIGHT) &&
+
+			                    -block_player_distance[2] <
+			                     BLOCK_SIZE / 2.0f + EYES_HEIGHT;
+
+			intersection = tmp_is_intersect.x &&
+			               tmp_is_intersect.y &&
+			               tmp_is_intersect.z;
+
+			if (!intersection)
+				continue;
+
+			if (!is_intersect.x) {
+				is_intersect.x = block_player_distance[0] >
+				                 block_player_distance[1];
+			}
+
+			if (!is_intersect.y) {
+				is_intersect.y = block_player_distance[1] >
+				                 block_player_distance[0];
+			}
+
+			if (!is_intersect.z) {
+			}
+		}
+	}
+
+	return is_intersect;
+}
+
+void process_collisions(struct chunk *chunks, struct player *player)
+{
+	struct position collision = box_box_intersect(chunks, player);
+
+	if (collision.x)
+		player->position[0] = player->prev_position[0];
+	if (collision.y)
+		player->position[1] = player->prev_position[1];
+	if (collision.z)
+		player->position[2] = player->prev_position[2];
+
+	player->prev_position[0] = player->position[0];
+	player->prev_position[1] = player->position[1];
+	player->prev_position[2] = player->position[2];
+
+	return;
+}
+
 int main(void)
 {
 	unsigned char *frame_buffer = (unsigned char*)calloc(FB_WIDTH *
@@ -32,6 +130,7 @@ int main(void)
 	struct time time;
 	struct player player;
 	struct chunk *loaded_chunks = init_chunks();
+
 	create_window(&window, FB_WIDTH, FB_HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -53,7 +152,7 @@ int main(void)
 	shaderProgram = prepare_shaders();
 	shaderProgram2 = prepare_shaders2();
 
-	struct notcurses *nc = notcurses_prepare();
+//	struct notcurses *nc = notcurses_prepare();
 
 	modelLoc = glGetUniformLocation(shaderProgram, "model");
 	viewLoc = glGetUniformLocation(shaderProgram, "view");
@@ -67,8 +166,10 @@ int main(void)
 	selected_block.x = -1; selected_block.y = -1; selected_block.z = -1;
 
 	while(!glfwWindowShouldClose(window)) {
+		mat4 projection;
 
 		processInput(window, &player, &loaded_chunks, selected_block);
+		process_collisions(loaded_chunks, &player);
 
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -89,9 +190,9 @@ int main(void)
 
 
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float *)view);
-		mat4 projection;
+
 		glm_perspective(glm_rad(player.head.FOV), (float)FB_WIDTH /
-		                                          (FB_HEIGHT+150),
+		                                          (FB_HEIGHT + 150),
 		                0.1f, 10000.0f, projection);
 
 		glUniformMatrix4fv(projectionLoc,
@@ -155,15 +256,19 @@ int main(void)
 		             GL_DEPTH_COMPONENT, GL_FLOAT,
 		             depth_buffer);
 
+		player.prev_position[0] = player.position[0];
+		player.prev_position[1] = player.position[1];
+		player.prev_position[2] = player.position[2];
+/*
 		struct ncplane* n = notcurses_stdplane(nc);
 
 		notcurses_render_ascii(nc, n, frame_buffer, depth_buffer);
 		stat_render(nc, n, time);
 		notcurses_render(nc);
-
+*/
 		glfwPollEvents();
 
-		printf("\033[H");
+//		printf("\033[H");
 	}
 
 	free(frame_buffer);
@@ -177,7 +282,7 @@ int main(void)
 	glDeleteBuffers(1, &EBO);
 	glDeleteProgram(shaderProgram);
 
-	notcurses_stop(nc);
+//	notcurses_stop(nc);
 	glfwTerminate();
 
 	return 0;

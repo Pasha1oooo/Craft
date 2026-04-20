@@ -10,11 +10,11 @@
 #include <wchar.h>
 
 enum render_parameters {
-	//FB_WIDTH = 2560,
-	//FB_HEIGHT = 1000,
+	FB_WIDTH = 2560,
+	FB_HEIGHT = 1000,
 	BLOCK_TYPES_AMOUNT = 8,
-	FB_WIDTH = 600,
-	FB_HEIGHT = 120,
+	//FB_WIDTH = 600,
+	//FB_HEIGHT = 120,
 	FPS_COUNT_TIME_INTERVAL = 3,
 };
 
@@ -39,6 +39,7 @@ struct camera {
 struct player {
 	struct camera head;
 	vec3 position;
+	vec3 prev_position;
 	float speed;
 	float rotation_speed;
 };

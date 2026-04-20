@@ -6,9 +6,9 @@
 #include <unistd.h>
 #include <cglm/cglm.h>
 #include <GLFW/glfw3.h>
-#include "generator.h"
 #include "render.h"
 #include "logic.h"
+#include "generator.h"
 
 const struct block blocks[BLOCK_TYPES_AMOUNT] = {
 	{{255, 255, 255, 255}, '#'},
@@ -299,7 +299,7 @@ void draw_chunk(struct chunk *chunk, int *ID, mat4 **stone, mat4 **ore)
 			vec3 offset;
 
 			offset[0] = (float)(chunk->pos->x * CHUNK_SIZE +
-			                                     (i % CHUNK_SIZE));
+		                                     (i % CHUNK_SIZE));
 			offset[1] = (float)(chunk->pos->y * CHUNK_SIZE +
 			                       (i / CHUNK_SIZE) % CHUNK_SIZE);
 			offset[2] = (float)(chunk->pos->z * CHUNK_SIZE +

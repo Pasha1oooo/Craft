@@ -13,11 +13,9 @@
 #include "texture.h"
 #include "logic.h"
 
-//TODO notcurses
-
-
 int main(void)
 {
+	printf("Start");
 	unsigned char *frame_buffer = (unsigned char*)calloc(FB_WIDTH * FB_HEIGHT,
 	                                                        sizeof(float));
 	float *depth_buffer = (float*)calloc(FB_WIDTH * FB_HEIGHT,
@@ -41,7 +39,7 @@ int main(void)
 		return 0;
 	}
 
-	prepare_gl_environment(&VBO, &VAO, &EBO, &instanceVBO, &VBO_highlight, &VAO_highlight, &EBO_highlight);
+	prepare_gl_environment(&VBO, &VAO, &EBO ,&instanceVBO, &VBO_highlight, &VAO_highlight, &EBO_highlight);
 
 	prepare_texture(&texture, "a.png");
 	prepare_texture(&texture2, "black.png");
@@ -50,8 +48,7 @@ int main(void)
 	shaderProgram = prepare_shaders();
 	shaderProgram2 = prepare_shaders2();
 
-	struct notcurses *nc = notcurses_prepare();
-
+	//struct notcurses *nc = notcurses_prepare();
 	modelLoc = glGetUniformLocation(shaderProgram, "model");
 	viewLoc = glGetUniformLocation(shaderProgram, "view");
 	projectionLoc = glGetUniformLocation(shaderProgram, "projection");
@@ -96,6 +93,7 @@ int main(void)
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 
 		render_chunks(loaded_chunks, texture, texture3, VAO);
+
 		glm_vec3_copy(player.position, player.head.cameraPos);
 
 
@@ -113,17 +111,17 @@ int main(void)
         }
 
 		glfwSwapBuffers(window);
-		//ASCII render part
-
-		glReadBuffer(GL_BACK);
-		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT, GL_RGBA,
-		                                     GL_UNSIGNED_BYTE, frame_buffer);
-		glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT,
-		                   GL_DEPTH_COMPONENT, GL_FLOAT, depth_buffer);
-		struct ncplane* n = notcurses_stdplane(nc);
-		notcurses_render_ascii(nc, n, frame_buffer, depth_buffer);
-		stat_render(nc, n, time);
-		notcurses_render(nc);
+		////ASCII render part
+//
+		//glReadBuffer(GL_BACK);
+		//glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT, GL_RGBA,
+		//                                     GL_UNSIGNED_BYTE, frame_buffer);
+		//glReadPixels(0, 0, FB_WIDTH, FB_HEIGHT,
+		//                   GL_DEPTH_COMPONENT, GL_FLOAT, depth_buffer);
+		//struct ncplane* n = notcurses_stdplane(nc);
+		//notcurses_render_ascii(nc, n, frame_buffer, depth_buffer);
+		//stat_render(nc, n, time);
+		//notcurses_render(nc);
 		glfwPollEvents();
 		printf("\033[H");
 	}
@@ -138,7 +136,7 @@ int main(void)
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
 	glDeleteProgram(shaderProgram);
-	notcurses_stop(nc);
+	//notcurses_stop(nc);
 
 	glfwTerminate();
 

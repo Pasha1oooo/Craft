@@ -69,6 +69,13 @@ unsigned int indices[] = {
 
 	20, 21, 22,
 	21, 22, 23};
+unsigned int up_edge[]    = {0, 1, 2, 1, 2, 3};
+unsigned int down_edge[]  = {4, 5, 6, 5, 6, 7};
+unsigned int left_edge[]  = {8, 9, 10, 9, 10, 11};
+unsigned int right_edge[] = {12, 13, 14, 13, 14, 15};
+unsigned int front_edge[] = {16, 17, 18, 17, 18, 19};
+unsigned int back_edge[]  = {20, 21, 22, 21, 22, 23};
+
 float vertices2[] = {
     // Передняя грань
      0.55f,  0.55f,  0.55f,   0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
@@ -200,80 +207,77 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO, unsigned int *
 	return;
 }
 
-void render_chunks(struct chunk *chunks, unsigned int texture_stone, unsigned int texture_ore, unsigned int VAO)
+void render_chunks(struct chunk *chunks, unsigned int texture_stone,
+                   unsigned int texture_ore, unsigned int VAO)
 {
-	const int CHUNKS_AMOUNT = pow(2 * RENDER_DISTANCE - 1, 3);
-	int block_amount = pow(CHUNK_SIZE, 3);
-	mat4 *modelMatrices;
-	int ID = 0;
-	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
-	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
-		mat4 *modelMatrices_stone = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
-		mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
-		draw_chunk(&(chunks[i]), &ID, &modelMatrices_stone, &modelMatrices_ore);
+    const int CHUNKS_AMOUNT = (int)pow(2 * RENDER_DISTANCE - 1, 3);
+    int block_amount = (int)pow(CHUNK_SIZE, 3);
 
-		glBindVertexArray(VAO);
-		glBindTexture(GL_TEXTURE_2D, texture_stone);
-		glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4),
-		                                modelMatrices_stone, GL_STATIC_DRAW);
-		glDrawElementsInstanced(GL_TRIANGLES,
-		                        sizeof(indices) / sizeof(indices[0]),
-		                        GL_UNSIGNED_INT, 0, block_amount);
-		glBindTexture(GL_TEXTURE_2D, texture_ore);
-		glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4),
-		                                modelMatrices_ore, GL_STATIC_DRAW);
-		glDrawElementsInstanced(GL_TRIANGLES,
-		                        sizeof(indices) / sizeof(indices[0]),
-		                        GL_UNSIGNED_INT, 0, block_amount);
-		free(modelMatrices_ore);
-		free(modelMatrices_stone);
+	struct block_edges *stone = calloc(CHUNKS_AMOUNT, sizeof(struct block_edges));
+	struct block_edges *ore = calloc(CHUNKS_AMOUNT, sizeof(struct block_edges));
 
+	glBindVertexArray(VAO);
+    for (int i = 0; i < CHUNKS_AMOUNT; i++) {
+        draw_chunk(&(chunks[i]), &stone[i], &ore[i]);
 	}
 
-	return;
+    glBindTexture(GL_TEXTURE_2D, texture_stone);
+    // up грань
+    glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4), stone, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, edgeEBOs[0]);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, block_amount);
+    // down грань
+    glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4), stone, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, edgeEBOs[1]);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, block_amount);
+    // left грань
+    glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4), stone, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, edgeEBOs[2]);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, block_amount);
+    // right грань
+    glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4), stone, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, edgeEBOs[3]);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, block_amount);
+    // front грань
+    glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4), stone, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, edgeEBOs[4]);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, block_amount);
+    // back грань
+    glBufferData(GL_ARRAY_BUFFER, block_amount * sizeof(mat4), stone, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, edgeEBOs[5]);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, block_amount);
+
+    free(stone);
+	free(ore);
 }
 
-void draw_chunk(struct chunk *chunk, int *ID, mat4 **stone, mat4 **ore)
-{
-	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
-	//TODO remove calloc
-	//mat4 *modelMatrices_stone = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
-	//mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
+//rename
+void draw_chunk(struct chunk *chunk, struct block_edges *stone, struct block_edges *ore) {
+    const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
 
-	for (int i = 0; i < BLOCKS_AMOUNT; i++) {
-		if (chunk->chunk_data[i] == '*') {
-			mat4 model = GLM_MAT4_IDENTITY_INIT;
-			vec3 offset;
+    for (int i = 0; i < BLOCKS_AMOUNT; i++) {
+        char block_type = chunk->chunk_data[i];
+        if (block_type == '*' || block_type == '#') {
+            mat4 model = GLM_MAT4_IDENTITY_INIT;
+            vec3 offset;
 
-			offset[0] = (float)(chunk->pos->x * CHUNK_SIZE +
-			                                     (i % CHUNK_SIZE));
-			offset[1] = (float)(chunk->pos->y * CHUNK_SIZE +
-			                       (i / CHUNK_SIZE) % CHUNK_SIZE);
-			offset[2] = (float)(chunk->pos->z * CHUNK_SIZE +
-			                        i / (CHUNK_SIZE * CHUNK_SIZE));
+            offset[0] = (float)(chunk->pos->x * CHUNK_SIZE + (i % CHUNK_SIZE));
+            offset[1] = (float)(chunk->pos->y * CHUNK_SIZE + ((i / CHUNK_SIZE) % CHUNK_SIZE));
+            offset[2] = (float)(chunk->pos->z * CHUNK_SIZE + (i / (CHUNK_SIZE * CHUNK_SIZE)));
 
-			glm_translate(model, offset);
-			glm_mat4_copy(model, (*stone)[i]);
-			*ID = 1;
-		}
-		if (chunk->chunk_data[i] == '#') {
-			mat4 model = GLM_MAT4_IDENTITY_INIT;
-			vec3 offset;
+            glm_translate(model, offset);
 
-			offset[0] = (float)(chunk->pos->x * CHUNK_SIZE +
-			                                     (i % CHUNK_SIZE));
-			offset[1] = (float)(chunk->pos->y * CHUNK_SIZE +
-			                       (i / CHUNK_SIZE) % CHUNK_SIZE);
-			offset[2] = (float)(chunk->pos->z * CHUNK_SIZE +
-			                        i / (CHUNK_SIZE * CHUNK_SIZE));
+            struct count_edges edges = check_edges(chunk, i);
+            struct block_edges *target = (block_type == '*') ? stone : ore;
 
-			glm_translate(model, offset);
-			glm_mat4_copy(model, (*ore)[i]);
-			*ID = 2;
-		}
-
-	}
-	return;
+            if (edges.count_up)    glm_mat4_copy(model, target->up_edge[i]);
+            if (edges.count_down)  glm_mat4_copy(model, target->down_edge[i]);
+            if (edges.count_left)  glm_mat4_copy(model, target->left_edge[i]);
+            if (edges.count_right) glm_mat4_copy(model, target->right_edge[i]);
+            if (edges.count_front) glm_mat4_copy(model, target->front_edge[i]);
+            if (edges.count_back)  glm_mat4_copy(model, target->back_edge[i]);
+        }
+    }
 }
 
 void putpixel(unsigned char *pixels, float pixels_depth)
@@ -333,6 +337,33 @@ void notcurses_render_ascii(struct notcurses* nc, struct ncplane* n, unsigned ch
 			}
 		}
 	}
+}
+
+struct count_edges check_edges(struct chunk *chunk, int i) {
+    struct count_edges edges;
+    int x = i % CHUNK_SIZE;
+    int y = (i / CHUNK_SIZE) % CHUNK_SIZE;
+    int z = i / (CHUNK_SIZE * CHUNK_SIZE);
+
+    // Сосед справа (X+1)
+    if (x == CHUNK_SIZE - 1 || chunk->chunk_data[i + 1] == '*')
+		edges.count_right = 1;
+    // Сосед слева (X-1)
+    if (x == 0 || chunk->chunk_data[i - 1] == '*')
+		edges.count_left = 1;
+    // Сосед сверху (Y+1)
+    if (y == CHUNK_SIZE - 1 || chunk->chunk_data[i + CHUNK_SIZE] == '*')
+		edges.count_up = 1;
+    // Сосед снизу (Y-1)
+    if (y == 0 || chunk->chunk_data[i - CHUNK_SIZE] == '*')
+		edges.count_down = 1;
+    // Сосед спереди (Z+1) — обычно Z вперёд
+    if (z == CHUNK_SIZE - 1 || chunk->chunk_data[i + CHUNK_SIZE * CHUNK_SIZE] == '*')
+		edges.count_front = 1;
+    // Сосед сзади (Z-1)
+    if (z == 0 || chunk->chunk_data[i - CHUNK_SIZE * CHUNK_SIZE] == '*')
+		edges.count_back = 1;
+    return edges;
 }
 
 void stat_render(struct notcurses* nc, struct ncplane* n, struct time time){

@@ -4,11 +4,12 @@
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
+#include <locale.h>
 #include <cglm/cglm.h>
 #include <GLFW/glfw3.h>
-#include "render.h"
-#include "logic.h"
 #include "generator.h"
+#include "logic.h"
+#include "render.h"
 
 const struct block blocks[BLOCK_TYPES_AMOUNT] = {
 	{{255, 255, 255, 255}, '#'},
@@ -278,7 +279,7 @@ void draw_chunk(struct chunk *chunk, int *ID, mat4 **stone, mat4 **ore)
 	//mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
 
 	for (int i = 0; i < BLOCKS_AMOUNT; i++) {
-		if (chunk->chunk_data[i] == '*') {
+		if (chunk->chunk_data[i] == STONE) {
 			mat4 model = GLM_MAT4_IDENTITY_INIT;
 			vec3 offset;
 
@@ -294,7 +295,7 @@ void draw_chunk(struct chunk *chunk, int *ID, mat4 **stone, mat4 **ore)
 			*ID = 1;
 		}
 
-		if (chunk->chunk_data[i] == '#') {
+		if (chunk->chunk_data[i] == ORE) {
 			mat4 model = GLM_MAT4_IDENTITY_INIT;
 			vec3 offset;
 
@@ -381,7 +382,7 @@ void notcurses_render_ascii(struct notcurses* nc, struct ncplane* n,
 					ncplane_set_bg_rgb8(n, background,
 					                       background,
 					                       background);
-					ncplane_putchar_yx(n, y, x,
+					ncplane_putchar_yx(n, FB_HEIGHT - y, x,
 					                   blocks[i].ascii);
 				}
 			}
@@ -414,7 +415,7 @@ void stat_render(struct notcurses* nc, struct ncplane* n, struct time time){
 		}
 	}
 
-	ncplane_printf_yx(child_plane, 0, 0, "FPS: %d", calculate_fps(&time));
+//	ncplane_printf_yx(child_plane, 0, 0, "FPS: %d", calculate_fps(&time));
 
 	return;
 }

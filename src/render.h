@@ -6,49 +6,19 @@
 #include <GLFW/glfw3.h>
 #include "generator.h"
 #include <notcurses/notcurses.h>
-#include <locale.h>
-#include <wchar.h>
 
 enum render_parameters {
-	FB_WIDTH = 2560,
-	FB_HEIGHT = 1000,
+//	FB_WIDTH = 2560,
+//	FB_HEIGHT = 1000,
 	BLOCK_TYPES_AMOUNT = 8,
-	//FB_WIDTH = 600,
-	//FB_HEIGHT = 120,
+	FB_WIDTH = 600,
+	FB_HEIGHT = 120,
 	FPS_COUNT_TIME_INTERVAL = 3,
 };
 
 struct block {
 	unsigned char color[4];
 	char ascii;
-};
-
-struct camera {
-	vec3 cameraPos;
-	vec3 cameraTarget;
-	vec3 cameraDirection;
-	vec3 up;
-	vec3 cameraRight;
-	vec3 cameraUp;
-	float yaw;
-	float pitch;
-	float roll;
-	float FOV;
-};
-
-struct player {
-	struct camera head;
-	vec3 position;
-	vec3 prev_position;
-	float speed;
-	float rotation_speed;
-};
-
-struct time {
-	float start;
-	float end;
-	int frame_counter;
-	int fps;
 };
 
 void create_window(GLFWwindow ** window, int fb_width , int fb_height);

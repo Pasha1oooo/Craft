@@ -3,9 +3,8 @@
 #include "../include/glad/glad.h"
 #include <cglm/cglm.h>
 #include <GLFW/glfw3.h>
-#include "render.h"
-#include "logic.h"
 #include "generator.h"
+#include "logic.h"
 
 void save_chunk_pos(vec3 *player_pos, struct position *chunk_pos)
 {
@@ -23,33 +22,26 @@ void save_chunk_pos(vec3 *player_pos, struct position *chunk_pos)
 	return;
 }
 
-int is_chunk_changed(vec3 player_pos, struct position *prev_chunk) //2ptr
+int is_chunk_changed(vec3 player_pos, struct position *prev_chunk)
 {
-	int is_chunk_changed[3];
 	struct position current_chunk;
+	int is_chunk_changed[3];
 	int is_changed = 0;
 
 	current_chunk.x = (int)player_pos[0] / CHUNK_SIZE;
 	current_chunk.y = (int)player_pos[1] / CHUNK_SIZE;
 	current_chunk.z = (int)player_pos[2] / CHUNK_SIZE;
 
-	if (player_pos[0] >= 0) {
-		is_chunk_changed[0] = current_chunk.x != prev_chunk->x;
-	} else {
-		is_chunk_changed[0] = current_chunk.x - 1 != prev_chunk->x;
-	}
+	if (player_pos[0] < 0.0f)
+		current_chunk.x--;
+	if (player_pos[1] < 0.0f)
+		current_chunk.y--;
+	if (player_pos[2] < 0.0f)
+		current_chunk.z--;
 
-	if (player_pos[1] >= 0) {
-		is_chunk_changed[1] = current_chunk.y != prev_chunk->y;
-	} else {
-		is_chunk_changed[1] = current_chunk.y - 1 != prev_chunk->y;
-	}
-
-	if (player_pos[2] >= 0) {
-		is_chunk_changed[2] = current_chunk.z != prev_chunk->z;
-	} else {
-		is_chunk_changed[2] = current_chunk.z - 1 != prev_chunk->z;
-	}
+	is_chunk_changed[0] = current_chunk.x != prev_chunk->x;
+	is_chunk_changed[1] = current_chunk.y != prev_chunk->y;
+	is_chunk_changed[2] = current_chunk.z != prev_chunk->z;
 
 	is_changed = is_chunk_changed[0] ||
 	             is_chunk_changed[1] ||
@@ -58,80 +50,90 @@ int is_chunk_changed(vec3 player_pos, struct position *prev_chunk) //2ptr
 	return is_changed;
 }
 
-int calculate_fps(struct time *time)
+void break_block(struct position *block_pos, struct chunk *chunks)
 {
-	float delta_time;
+	struct position chunk_pos;
+	struct position local_block_pos;
+	int block_index;
 
-	time->end = glfwGetTime();
-	delta_time = time->end - time->start;
-	time->frame_counter += 1;
+	chunk_pos.x = block_pos->x / 16;
+	chunk_pos.y = block_pos->y / 16;
+	chunk_pos.z = block_pos->z / 16;
 
-	if (delta_time > FPS_COUNT_TIME_INTERVAL) {
-		time->fps = (int)((float)time->frame_counter / delta_time);
-		time->start = glfwGetTime();
-		time->frame_counter = 0;
-		return time->fps;
+	if (block_pos->x < 0)
+		chunk_pos.x--;
+	if (block_pos->y < 0)
+		chunk_pos.y--;
+	if (block_pos->z < 0)
+		chunk_pos.z--;
+
+	local_block_pos.x = block_pos->x - 16 * chunk_pos.x;
+	local_block_pos.y = block_pos->y - 16 * chunk_pos.y;
+	local_block_pos.z = block_pos->z - 16 * chunk_pos.z;
+
+	block_index = 256 * local_block_pos.z +
+	               16 * local_block_pos.y +
+	                    local_block_pos.x;
+
+	int is_chunk_selected;
+
+	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
+		is_chunk_selected = chunks[i].pos->x == chunk_pos.x &&
+		                    chunks[i].pos->y == chunk_pos.y &&
+		                    chunks[i].pos->z == chunk_pos.z;
+
+		if (is_chunk_selected) {
+			chunks[i].chunk_data[block_index] = AIR;
+			save_chunk(chunks[i].chunk_data,
+			           get_chunk_name(chunks[i].pos));
+
+			break;
+		}
 	}
 
-	return 0;
-}
-
-void update_camera_direction(struct camera *cam)
-{
-	vec3 world_up = {0.0f, 0.0f, 1.0f};
-
-	cam->cameraDirection[0] = cos(glm_rad(cam->pitch)) *
-	                          cos(glm_rad(cam->yaw));
-	cam->cameraDirection[1] = cos(glm_rad(cam->pitch)) *
-	                          sin(glm_rad(cam->yaw));
-	cam->cameraDirection[2] = sin(glm_rad(cam->pitch));
-
-	glm_vec3_rotate(world_up, glm_rad(cam->roll), cam->cameraDirection);
-	glm_vec3_copy(world_up, cam->cameraUp);
-
-	glm_normalize(cam->cameraDirection);
-	glm_normalize(cam->cameraUp);
-	glm_normalize(cam->cameraRight);
-	glm_cross(cam->cameraDirection, cam->cameraUp, cam->cameraRight);
+	return;
 }
 
 void processInput(GLFWwindow * window, struct player *player,
-                  struct chunk **chunks, struct position selected_block)
+                  struct chunk *chunks, struct position *selected_block)
 {
-	const int CHUNK_AMOUNT = pow(2 * RENDER_DISTANCE - 1, 3);
-
 	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, 1);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		player->position[0] += player->speed *
 		                       player->head.cameraDirection[0];
-
 		player->position[1] += player->speed *
 		                       player->head.cameraDirection[1];
 	}
+
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
 		player->position[0] -= player->speed *
 		                       player->head.cameraDirection[0];
 		player->position[1] -= player->speed *
 		                       player->head.cameraDirection[1];
 	}
+
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 		player->position[0] -= player->speed *
 		                       player->head.cameraDirection[1];
 		player->position[1] += player->speed *
 		                       player->head.cameraDirection[0];
 	}
+
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		player->position[0] += player->speed *
 		                       player->head.cameraDirection[1];
 		player->position[1] -= player->speed *
 		                       player->head.cameraDirection[0];
 	}
+
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
 		player->position[2] += player->speed;
+
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		player->position[2] -= player->speed;
+
 	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
 		player->head.FOV = 10.0f;
 	} else {
@@ -139,32 +141,10 @@ void processInput(GLFWwindow * window, struct player *player,
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-		if (selected_block.x == -1)
+		if (selected_block->x == -1)
 			return;
 
-		int chunk_x = floor(selected_block.x / 16.0f);
-		int chunk_y = floor(selected_block.y / 16.0f);
-		int chunk_z = floor(selected_block.z / 16.0f);
-		int local_x = selected_block.x - chunk_x * 16;
-		int local_y = selected_block.y - chunk_y * 16;
-		int local_z = selected_block.z - chunk_z * 16;
-
-		int j = 256 * local_z + 16 * local_y + local_x;
-		int is_chunk_selected;
-
-		for (int i = 0; i < CHUNK_AMOUNT; i++) {
-			is_chunk_selected = (*chunks)[i].pos->x == chunk_x &&
-			                    (*chunks)[i].pos->y == chunk_y &&
-			                    (*chunks)[i].pos->z == chunk_z;
-
-			if (is_chunk_selected) {
-				(*chunks)[i].chunk_data[j] = ' ';
-				save_chunk((*chunks)[i].chunk_data,
-				           get_chunk_name((*chunks)[i].pos));
-
-				break;
-			}
-		}
+		break_block(selected_block, chunks);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
@@ -184,17 +164,17 @@ void processInput(GLFWwindow * window, struct player *player,
 		update_camera_direction(&player->head);
 	}
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
-		player->head.yaw-=5.0f;
+		player->head.yaw -= 5.0f;
 
-		if(player->head.yaw>=360)
+		if(player->head.yaw >= 360)
 			player->head.yaw = 0;
 
 		update_camera_direction(&player->head);
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
-		player->head.yaw+=5.0f;
+		player->head.yaw += 5.0f;
 
-		if(player->head.yaw<=-360)
+		if(player->head.yaw <= -360)
 			player->head.yaw = 0;
 
 		update_camera_direction(&player->head);
@@ -207,6 +187,28 @@ void processInput(GLFWwindow * window, struct player *player,
 		player->head.roll-=2;
 		update_camera_direction(&player->head);
 	}
+
+	return;
+}
+
+void update_camera_direction(struct camera *cam)
+{
+	vec3 world_up = {0.0f, 0.0f, 1.0f};
+
+	cam->cameraDirection[0] = cos(glm_rad(cam->pitch)) *
+	                          cos(glm_rad(cam->yaw));
+	cam->cameraDirection[1] = cos(glm_rad(cam->pitch)) *
+	                          sin(glm_rad(cam->yaw));
+	cam->cameraDirection[2] = sin(glm_rad(cam->pitch));
+
+	glm_vec3_rotate(world_up, glm_rad(cam->roll), cam->cameraDirection);
+	glm_vec3_copy(world_up, cam->cameraUp);
+
+	glm_normalize(cam->cameraDirection);
+	glm_normalize(cam->cameraUp);
+	glm_normalize(cam->cameraRight);
+
+	glm_cross(cam->cameraDirection, cam->cameraUp, cam->cameraRight);
 
 	return;
 }
@@ -226,7 +228,6 @@ struct camera create_camera(void)
 
 	update_camera_direction(&camera);
 
-	// поле должно называться cameraUp
 	glm_vec3_copy((vec3){0.0f, 0.0f, 1.0f}, camera.cameraUp);
 	glm_vec3_cross(camera.cameraUp,
 	               camera.cameraDirection,
@@ -335,4 +336,18 @@ int select_block(struct player player, struct chunk *chunks,
 	}
 
 	return 0;
+}
+
+void calculate_fps(struct time *time)
+{
+	float delta_time;
+
+	time->end = glfwGetTime();
+
+	delta_time = time->end - time->start;
+	time->fps = 1.0f / delta_time;
+
+	time->start = glfwGetTime();
+
+	return;
 }

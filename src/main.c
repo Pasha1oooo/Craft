@@ -6,8 +6,8 @@
 #include <unistd.h>
 #include <cglm/cglm.h>
 #include <GLFW/glfw3.h>
-#include "render.h"
 #include "generator.h"
+#include "render.h"
 #include "shader.h"
 #include "render.h"
 #include "texture.h"
@@ -21,9 +21,8 @@ const float BLOCK_SIZE = 1.0f;
 // optimize
 struct position box_box_intersect(struct chunk *chunks, struct player *player)
 {
-	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
 	const int CHUNKS_AMOUNT = pow(2 * RENDER_DISTANCE - 1, 3);
-	const float MIN_DIFF = 0.15f;
+	const float MIN_DIFF = 0.1f;
 	struct position is_intersect = {.x = 0, .y = 0, .z = 0};
 	struct position tmp_is_intersect;;
 	vec3 block_pos;
@@ -36,7 +35,7 @@ struct position box_box_intersect(struct chunk *chunks, struct player *player)
 		chunk_offset[1] = CHUNK_SIZE * (float)chunks[i].pos->y;
 		chunk_offset[2] = CHUNK_SIZE * (float)chunks[i].pos->z;
 
-		for (int j = 0; j < BLOCKS_AMOUNT; j++) {
+		for (int j = 0; j < BLOCKS_IN_CHUNK; j++) {
 			if (chunks[i].chunk_data[j] == ' ')
 				continue;
 
@@ -77,12 +76,14 @@ struct position box_box_intersect(struct chunk *chunks, struct player *player)
 
 			if (!is_intersect.x) {
 				is_intersect.x = block_player_distance[0] >
-				                 block_player_distance[1];
+				                 block_player_distance[1] +
+				                 MIN_DIFF;
 			}
 
 			if (!is_intersect.y) {
 				is_intersect.y = block_player_distance[1] >
-				                 block_player_distance[0];
+				                 block_player_distance[0] +
+				                 MIN_DIFF;
 			}
 
 			if (!is_intersect.z) {
@@ -92,6 +93,8 @@ struct position box_box_intersect(struct chunk *chunks, struct player *player)
 
 	return is_intersect;
 }
+
+const int MOVE_STEPS = 100;
 
 void process_collisions(struct chunk *chunks, struct player *player)
 {
@@ -152,7 +155,7 @@ int main(void)
 	shaderProgram = prepare_shaders();
 	shaderProgram2 = prepare_shaders2();
 
-//	struct notcurses *nc = notcurses_prepare();
+	struct notcurses *nc = notcurses_prepare();
 
 	modelLoc = glGetUniformLocation(shaderProgram, "model");
 	viewLoc = glGetUniformLocation(shaderProgram, "view");
@@ -160,7 +163,6 @@ int main(void)
 
 	player = create_player();
 
-	time.frame_counter = 0;
 	time.start = glfwGetTime();
 	struct position selected_block;
 	selected_block.x = -1; selected_block.y = -1; selected_block.z = -1;
@@ -168,7 +170,7 @@ int main(void)
 	while(!glfwWindowShouldClose(window)) {
 		mat4 projection;
 
-		processInput(window, &player, &loaded_chunks, selected_block);
+		processInput(window, &player, loaded_chunks, &selected_block);
 		process_collisions(loaded_chunks, &player);
 
 		glEnable(GL_DEPTH_TEST);
@@ -259,16 +261,16 @@ int main(void)
 		player.prev_position[0] = player.position[0];
 		player.prev_position[1] = player.position[1];
 		player.prev_position[2] = player.position[2];
-/*
+
 		struct ncplane* n = notcurses_stdplane(nc);
 
 		notcurses_render_ascii(nc, n, frame_buffer, depth_buffer);
-		stat_render(nc, n, time);
+		//stat_render(nc, n, time);
 		notcurses_render(nc);
-*/
+
 		glfwPollEvents();
 
-//		printf("\033[H");
+		printf("\033[H");
 	}
 
 	free(frame_buffer);
@@ -282,7 +284,7 @@ int main(void)
 	glDeleteBuffers(1, &EBO);
 	glDeleteProgram(shaderProgram);
 
-//	notcurses_stop(nc);
+	notcurses_stop(nc);
 	glfwTerminate();
 
 	return 0;

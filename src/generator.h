@@ -4,9 +4,21 @@
 #include <cglm/cglm.h>
 #include <math.h>
 
-extern const int CHUNK_SIZE;
-extern const int RENDER_DISTANCE;
-extern const int CHUNK_NAME_LEN;
+enum GENERATOR_PARAMETERS {
+	CHUNK_SIZE = 16,
+	RENDER_DISTANCE = 3,
+	CHUNK_NAME_LEN = 64,
+	CHUNKS_SIDE = 2 * RENDER_DISTANCE - 1,
+	CHUNKS_AMOUNT = CHUNKS_SIDE * CHUNKS_SIDE * CHUNKS_SIDE,
+	BLOCKS_IN_CHUNK = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE,
+	BLOCKS_AMOUNT = BLOCKS_IN_CHUNK * CHUNKS_AMOUNT
+};
+
+enum BLOCKS {
+	AIR = ' ',
+	STONE = '*',
+	ORE = '#'
+};
 
 struct position {
 	int x;
@@ -30,6 +42,5 @@ void save_chunk(char *chunk_data, char *file_name);
 void load_chunk(char *chunk_data, FILE *file);
 
 char *get_chunk_name(struct position *chunk_pos);
-char *num2str(char *str, int num);
 
 #endif

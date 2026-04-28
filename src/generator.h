@@ -31,16 +31,26 @@ struct chunk {
 	struct position *pos;
 };
 
+struct position index2lpos(int index, const int SIDE);
+
 struct chunk *init_chunks(void);
 void deinit_chunks(struct chunk *chunks);
 
 void get_chunks(struct chunk *chunks, vec3 a);
 void gen_chunk(struct chunk *chunk);
-char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos);
+char chunk_gen_logic(struct position *gpos);
 
 void save_chunk(char *chunk_data, char *file_name);
 void load_chunk(char *chunk_data, FILE *file);
 
 char *get_chunk_name(struct position *chunk_pos);
+
+struct position gpos2chunkpos(struct position *pos);
+struct position gpos2lpos(struct position *global);
+struct position lpos2gpos(struct position *lpos, struct position *chunk_pos);
+struct position vec2pos(vec3 vec_pos);
+void pos2vec(struct position *pos, vec3 vec_pos);
+struct position index2lpos(int index, const int SIDE);
+int lpos2index(struct position *pos, const int SIDE);
 
 #endif

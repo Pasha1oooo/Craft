@@ -13,15 +13,15 @@ struct chunk *init_chunks(void)
 {
 	struct chunk *loaded_chunks;
 
-	loaded_chunks = (struct chunk *)calloc(BLOCKS_AMOUNT,
+	loaded_chunks = (struct chunk *)calloc(CHUNKS_AMOUNT,
 	                                       sizeof(struct chunk));
 
-	for (int i = 0; i < BLOCKS_AMOUNT; i++) {
+	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
 		loaded_chunks[i].chunk_data = (char *)calloc(BLOCKS_IN_CHUNK,
 		                                             sizeof(char));
 
 		loaded_chunks[i].pos = (struct position *)calloc(1,
-		                                      sizeof(struct position));
+		                       sizeof(struct position));
 	}
 
 	return loaded_chunks;
@@ -35,70 +35,47 @@ void deinit_chunks(struct chunk *chunks)
 	}
 
 	free(chunks);
-
-	return;
 }
 
-void get_chunks(struct chunk *chunks, vec3 player_vector_pos)
+void get_chunks(struct chunk *chunks, vec3 player_vec_pos)
 {
-	struct position player_pos;
+	struct position player_pos = vec2pos(player_vec_pos);
+	struct position player_chunk = gpos2chunkpos(&player_pos);
 	struct position local_chunk_pos;
 
-	player_pos.x = floorf(player_vector_pos[0]);
-	player_pos.y = floorf(player_vector_pos[1]);
-	player_pos.z = floorf(player_vector_pos[2]);
-
 	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
-		local_chunk_pos.x = (i % CHUNKS_SIDE);
-		local_chunk_pos.y = (i / CHUNKS_SIDE) % CHUNKS_SIDE;
-		local_chunk_pos.z = (i / CHUNKS_SIDE) / CHUNKS_SIDE;
+		local_chunk_pos = index2lpos(i, CHUNKS_SIDE);
 
-		chunks[i].pos->x = player_pos.x / CHUNK_SIZE +
-		                   local_chunk_pos.x - CHUNKS_SIDE / 2;
-
-		chunks[i].pos->y = player_pos.y / CHUNK_SIZE +
-		                   local_chunk_pos.y - CHUNKS_SIDE / 2;
-
-		chunks[i].pos->z = player_pos.z / CHUNK_SIZE +
-		                   local_chunk_pos.z - CHUNKS_SIDE / 2;
-
-		if (player_pos.x < 0)
-			chunks[i].pos->x -= 1;
-		if (player_pos.y < 0)
-			chunks[i].pos->y -= 1;
-		if (player_pos.z < 0)
-			chunks[i].pos->z -= 1;
+		chunks[i].pos->x = player_chunk.x + local_chunk_pos.x -
+		                   (RENDER_DISTANCE - 1);
+		chunks[i].pos->y = player_chunk.y + local_chunk_pos.y -
+		                   (RENDER_DISTANCE - 1);
+		chunks[i].pos->z = player_chunk.z + local_chunk_pos.z -
+		                   (RENDER_DISTANCE - 1);
 
 		gen_chunk(&(chunks[i]));
 	}
-
-	return;
 }
 
 void gen_chunk(struct chunk *chunk)
 {
-	struct position local_pos;
+	struct position lpos, gpos;
 	char *chunk_file_name = get_chunk_name(chunk->pos);
 	FILE *chunk_file = fopen(chunk_file_name, "rb");
-	char ch = 0;
 
 	if (chunk_file) {
 		load_chunk(chunk->chunk_data, chunk_file);
 		fclose(chunk_file);
 	} else {
 		for (int i = 0; i < BLOCKS_IN_CHUNK; i++) {
-			local_pos.x = (i % CHUNK_SIZE);
-			local_pos.y = (i / CHUNK_SIZE) % CHUNK_SIZE;
-			local_pos.z = (i / CHUNK_SIZE) / CHUNK_SIZE;
+			lpos = index2lpos(i, CHUNK_SIZE);
+			gpos = lpos2gpos(&lpos, chunk->pos);
 
-			ch = chunk_gen_logic(chunk->pos, &local_pos);
-			chunk->chunk_data[i] = ch;
+			chunk->chunk_data[i] = chunk_gen_logic(&gpos);
 		}
 
 		save_chunk(chunk->chunk_data, chunk_file_name);
 	}
-
-	return;
 }
 
 void save_chunk(char *chunk_data, char *file_name)
@@ -107,33 +84,28 @@ void save_chunk(char *chunk_data, char *file_name)
 
 	fwrite(chunk_data, sizeof(char), BLOCKS_IN_CHUNK, file);
 	fclose(file);
-
-	return;
 }
 
 void load_chunk(char *chunk_data, FILE *file)
 {
 	fread(chunk_data, sizeof(char), BLOCKS_IN_CHUNK, file);
-
-	return;
 }
 
-char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
+char chunk_gen_logic(struct position *gpos)
 {
-	char result = AIR;
-	vec3 point, biome_point;
 	float perlin_value, biome_value;
-	int x = chunk_pos->x * CHUNK_SIZE + local_pos->x;
-	int y = chunk_pos->y * CHUNK_SIZE + local_pos->y;
-	int z = chunk_pos->z * CHUNK_SIZE + local_pos->z;
+	char result = AIR;
+	vec3 point, biome_point, vec_pos;
+/*
+	pos2vec(gpos, vec_pos);
 
-	point[0] = (float)x / 20.0f;
-	point[1] = (float)y / 20.0f;
-	point[2] = (float)z / 10.0f;
+	point[0] = vec_pos[0] / 20.0f;
+	point[1] = vec_pos[1] / 20.0f;
+	point[2] = vec_pos[2] / 10.0f;
 
-	biome_point[0] = (float)x / 200.0f;
-	biome_point[1] = (float)y / 200.0f;
-	biome_point[2] = (float)z / 100.0f;
+	biome_point[0] = vec_pos[0] / 200.0f;
+	biome_point[1] = vec_pos[1] / 200.0f;
+	biome_point[2] = vec_pos[2] / 100.0f;
 
 	perlin_value = glm_perlin_vec3(point);
 	biome_value = glm_perlin_vec3(biome_point);
@@ -143,9 +115,9 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	}
 
 	if (result == STONE) {
-		point[0] = (float)x / 10.0f;
-		point[1] = (float)y / 10.0f;
-		point[2] = (float)z / 10.0f;
+		point[0] = vec_pos[0] / 10.0f;
+		point[1] = vec_pos[1] / 10.0f;
+		point[2] = vec_pos[2] / 10.0f;
 
 		perlin_value = glm_perlin_vec3(point);
 
@@ -154,6 +126,42 @@ char chunk_gen_logic(struct position *chunk_pos, struct position *local_pos)
 	}
 
 	return result;
+*/
+
+	struct position pos;
+	int R = 10;
+
+	pos.x = gpos->x;
+	pos.y = gpos->y;
+	pos.z = gpos->z;
+
+	int distance = pow(pos.x, 2) + pow(pos.y, 2) + pow(pos.z, 2);
+
+	if(distance < pow(R, 2))
+	{
+		if (pos.z >= 0) {
+			return AIR;
+		} else {
+			return STONE;
+		}
+	}
+
+	int is_block[3] = {1, 1, 1};
+
+	while (pos.x || pos.y || pos.z) {
+		is_block[0] = abs(pos.x) % 3 == 1;
+		is_block[1] = abs(pos.y) % 3 == 1;
+		is_block[2] = abs(pos.z) % 3 == 1;
+
+		pos.x /= 3;
+		pos.y /= 3;
+		pos.z /= 3;
+
+		if (is_block[0] + is_block[1] + is_block[2] >= 2)
+			return AIR;
+	}
+
+	return STONE;
 }
 
 char *get_chunk_name(struct position *chunk_pos)
@@ -168,3 +176,103 @@ char *get_chunk_name(struct position *chunk_pos)
 
 	return chunk_name;
 }
+
+struct position gpos2chunkpos(struct position *pos)
+{
+	struct position chunk_pos;
+
+	if (pos->x >= 0) {
+		chunk_pos.x = pos->x / CHUNK_SIZE;
+	} else {
+		chunk_pos.x = -((abs(pos->x) + 1) / CHUNK_SIZE);
+	}
+
+	if (pos->y >= 0) {
+		chunk_pos.y = pos->y / CHUNK_SIZE;
+	} else {
+		chunk_pos.y = -((abs(pos->y) + 1) / CHUNK_SIZE);
+	}
+
+	if (pos->z >= 0) {
+		chunk_pos.z = pos->z / CHUNK_SIZE;
+	} else {
+		chunk_pos.z = -((abs(pos->z) + 1) / CHUNK_SIZE);
+	}
+
+	return chunk_pos;
+}
+
+struct position gpos2lpos(struct position *global)
+{
+	struct position local;
+
+	if (global->x >= 0) {
+		local.x = global->x % CHUNK_SIZE;
+	} else {
+		local.x = CHUNK_SIZE - abs(global->x) % CHUNK_SIZE;
+	}
+
+	if (global->y >= 0) {
+		local.y = global->y % CHUNK_SIZE;
+	} else {
+		local.y = CHUNK_SIZE - abs(global->y) % CHUNK_SIZE;
+	}
+
+	if (global->z >= 0) {
+		local.z = global->z % CHUNK_SIZE;
+	} else {
+		local.z = CHUNK_SIZE - abs(global->z) % CHUNK_SIZE;
+	}
+
+	return local;
+}
+
+struct position lpos2gpos(struct position *lpos, struct position *chunk_pos)
+{
+	struct position gpos;
+
+	gpos.x = chunk_pos->x * CHUNK_SIZE + lpos->x;
+	gpos.y = chunk_pos->y * CHUNK_SIZE + lpos->y;
+	gpos.z = chunk_pos->z * CHUNK_SIZE + lpos->z;
+
+	return gpos;
+}
+
+struct position vec2pos(vec3 vec_pos)
+{
+	struct position pos;
+
+	pos.x = (int)floorf(vec_pos[0]);
+	pos.y = (int)floorf(vec_pos[1]);
+	pos.z = (int)floorf(vec_pos[2]);
+
+	return pos;
+}
+
+void pos2vec(struct position *pos, vec3 vec_pos)
+{
+	vec_pos[0] = (float)pos->x;
+	vec_pos[1] = (float)pos->y;
+	vec_pos[2] = (float)pos->z;
+}
+
+struct position index2lpos(int index, const int SIDE)
+{
+	struct position pos;
+
+	pos.x =  index % SIDE;
+	pos.y = (index / SIDE) % SIDE;
+	pos.z = (index / SIDE) / SIDE;
+
+	return pos;
+}
+
+int lpos2index(struct position *pos, const int SIDE)
+{
+	int index = pos->z * SIDE * SIDE +
+	            pos->y * SIDE +
+	            pos->x;
+
+	return index;
+}
+

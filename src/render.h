@@ -13,6 +13,7 @@ enum render_parameters {
 	BLOCK_TYPES_AMOUNT = 8,
 	FB_WIDTH = 600,
 	FB_HEIGHT = 120,
+	FB_PIXELS_AMOUNT = FB_WIDTH * FB_HEIGHT,
 	FPS_COUNT_TIME_INTERVAL = 3,
 };
 
@@ -31,10 +32,11 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
 
 void render_chunks(struct chunk *chunks, unsigned int texture_stone,
                    unsigned int texture_ore, unsigned int VAO);
+void draw_chunk(struct chunk *chunk, mat4 **stone, mat4 **ore);
 
-void draw_chunk(struct chunk *chunk, int *ID, mat4 **stone, mat4 **ore);
-void putpixel(unsigned char *pixels, float pixels_depth);
-struct notcurses* notcurses_prepare();
+struct notcurses *notcurses_prepare();
+void notcurses_putpixel(struct ncplane *n, unsigned char *pixel_rgba,
+                        float depth, int i);
 void notcurses_render_ascii(struct notcurses* nc, struct ncplane* n,
                             unsigned char *frame_buffer, float *depth_buffer);
 

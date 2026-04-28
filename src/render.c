@@ -12,14 +12,14 @@
 #include "render.h"
 
 const struct block blocks[BLOCK_TYPES_AMOUNT] = {
-	{{255, 255, 255, 255}, '#'},
-	{{0  , 0  , 0  , 255}, ' '},
-	{{255, 0  , 255, 255}, '`'},
-	{{255, 255, 0  , 255}, '-'},
-	{{0  , 255, 255, 255}, '@'},
-	{{255,   0, 0  , 255}, '*'},
-	{{0  , 255, 0  , 255}, '#'},
-	{{0  , 0  , 255, 255}, '.'}
+	{{255, 255, 255, 255}, ORE  },
+	{{0  , 0  , 0  , 255}, AIR  },
+	{{255, 0  , 255, 255}, '`'  },
+	{{255, 255, 0  , 255}, '-'  },
+	{{0  , 255, 255, 255}, '@'  },
+	{{255,   0, 0  , 255}, STONE},
+	{{0  , 255, 0  , 255}, ORE  },
+	{{0  , 0  , 255, 255}, '.'  }
 };
 
 float vertices[] = {
@@ -138,8 +138,6 @@ void create_window(GLFWwindow **window, int fb_width , int fb_height)
 	}
 
 	glfwMakeContextCurrent(*window);
-
-	return;
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
@@ -196,7 +194,8 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
 
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE,
-			8 * sizeof(float), (void *)(6 * sizeof(float)));
+	                      8 * sizeof(float),
+	                      (void *)(6 * sizeof(float)));
 
 	glEnableVertexAttribArray(6);
 	glGenVertexArrays(1, VAO_highlight);
@@ -223,125 +222,68 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
 	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE,
 	                      8 * sizeof(float), (void *)(6 * sizeof(float)));
 	glEnableVertexAttribArray(6);
-
-	return;
 }
 
 void render_chunks(struct chunk *chunks, unsigned int texture_stone,
                    unsigned int texture_ore, unsigned int VAO)
 {
-	const int CHUNKS_AMOUNT = pow(2 * RENDER_DISTANCE - 1, 3);
-	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
-	int block_amount = pow(CHUNK_SIZE, 3);
-	mat4 *modelMatrices;
-	int ID = 0;
-
 	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
-		mat4 *modelMatrices_stone = (mat4 *)calloc(BLOCKS_AMOUNT,
+		mat4 *modelMatrices_stone = (mat4 *)calloc(BLOCKS_IN_CHUNK,
 		                                           sizeof(mat4));
-		mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_AMOUNT,
+		mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_IN_CHUNK,
 		                                         sizeof(mat4));
-		draw_chunk(&(chunks[i]), &ID,
+		draw_chunk(&(chunks[i]),
 		           &modelMatrices_stone,
 		           &modelMatrices_ore);
 
 		glBindVertexArray(VAO);
 		glBindTexture(GL_TEXTURE_2D, texture_stone);
 		glBufferData(GL_ARRAY_BUFFER,
-		             block_amount * sizeof(mat4),
+		             BLOCKS_IN_CHUNK * sizeof(mat4),
 		             modelMatrices_stone, GL_STATIC_DRAW);
 
 		glDrawElementsInstanced(GL_TRIANGLES,
 		                        sizeof(indices) / sizeof(indices[0]),
-		                        GL_UNSIGNED_INT, 0, block_amount);
+		                        GL_UNSIGNED_INT, 0, BLOCKS_IN_CHUNK);
 
 		glBindTexture(GL_TEXTURE_2D, texture_ore);
 		glBufferData(GL_ARRAY_BUFFER,
-		             block_amount * sizeof(mat4),
+		             BLOCKS_IN_CHUNK * sizeof(mat4),
 		             modelMatrices_ore, GL_STATIC_DRAW);
 
 		glDrawElementsInstanced(GL_TRIANGLES,
 		                        sizeof(indices) / sizeof(indices[0]),
-		                        GL_UNSIGNED_INT, 0, block_amount);
+		                        GL_UNSIGNED_INT, 0, BLOCKS_IN_CHUNK);
 
 		free(modelMatrices_ore);
 		free(modelMatrices_stone);
 	}
-
-	return;
 }
 
-void draw_chunk(struct chunk *chunk, int *ID, mat4 **stone, mat4 **ore)
+void draw_chunk(struct chunk *chunk, mat4 **stone, mat4 **ore)
 {
-	const int BLOCKS_AMOUNT = pow(CHUNK_SIZE, 3);
-	//TODO remove calloc
-	//mat4 *modelMatrices_stone = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
-	//mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_AMOUNT, sizeof(mat4));
+	for (int i = 0; i < BLOCKS_IN_CHUNK; i++) {
+		mat4 model = GLM_MAT4_IDENTITY_INIT;
+		struct position lpos = index2lpos(i, CHUNK_SIZE);
+		struct position gpos = lpos2gpos(&lpos, chunk->pos);
+		vec3 vec_gpos;
 
-	for (int i = 0; i < BLOCKS_AMOUNT; i++) {
-		if (chunk->chunk_data[i] == STONE) {
-			mat4 model = GLM_MAT4_IDENTITY_INIT;
-			vec3 offset;
+		pos2vec(&gpos, vec_gpos);
+		glm_translate(model, vec_gpos);
 
-			offset[0] = (float)(chunk->pos->x * CHUNK_SIZE +
-			            (i % CHUNK_SIZE));
-			offset[1] = (float)(chunk->pos->y * CHUNK_SIZE +
-			            (i / CHUNK_SIZE) % CHUNK_SIZE);
-			offset[2] = (float)(chunk->pos->z * CHUNK_SIZE +
-			            i / (CHUNK_SIZE * CHUNK_SIZE));
-
-			glm_translate(model, offset);
-			glm_mat4_copy(model, (*stone)[i]);
-			*ID = 1;
-		}
-
-		if (chunk->chunk_data[i] == ORE) {
-			mat4 model = GLM_MAT4_IDENTITY_INIT;
-			vec3 offset;
-
-			offset[0] = (float)(chunk->pos->x * CHUNK_SIZE +
-		                                     (i % CHUNK_SIZE));
-			offset[1] = (float)(chunk->pos->y * CHUNK_SIZE +
-			                       (i / CHUNK_SIZE) % CHUNK_SIZE);
-			offset[2] = (float)(chunk->pos->z * CHUNK_SIZE +
-			                        i / (CHUNK_SIZE * CHUNK_SIZE));
-
-			glm_translate(model, offset);
-			glm_mat4_copy(model, (*ore)[i]);
-			*ID = 2;
-		}
-
-	}
-
-	return;
-}
-
-void putpixel(unsigned char *pixels, float pixels_depth)
-{
-	int background = (int)(255 * (1 / exp(150 - 150 * pixels_depth)));
-	int is_same_color[3];
-
-	if (background < 0)
-		background = 0;
-	if (background > 200)
-		background = 200;
-
-	for (int i = 0; i < BLOCK_TYPES_AMOUNT; i++) {
-		for (int j = 0; j < 3; j++)
-			is_same_color[j] = pixels[j] == blocks[i].color[j];
-
-		if (is_same_color[0] && is_same_color[1] && is_same_color[2]) {
-			printf("\033[1;48;2;%d;%d;%dm%c\033[0m", background,
-			                                      background,
-			                                      background,
-			                                      blocks[i].ascii);
+		switch(chunk->chunk_data[i]) {
+			case STONE:
+				glm_mat4_copy(model, (*stone)[i]);
+				break;
+			case ORE:
+				glm_mat4_copy(model, (*ore)[i]);
+				break;
 		}
 	}
-
-	return;
 }
 
-struct notcurses* notcurses_prepare() {
+struct notcurses *notcurses_prepare(void)
+{
 	setlocale(LC_ALL, "");
 
 	struct notcurses* nc = notcurses_init(NULL, stdout);
@@ -349,65 +291,65 @@ struct notcurses* notcurses_prepare() {
 	return nc;
 }
 
+void notcurses_putpixel(struct ncplane *n, unsigned char *pixel_rgba,
+                        float depth, int i)
+{
+	int background_light = (int)(255 * (1 / exp(150 - 150 * depth)));
+	int is_same_color[3];
+	int x = i % FB_WIDTH;
+	int y = i / FB_WIDTH;
+
+	if (background_light < 0)
+		background_light = 0;
+	if (background_light > 200)
+		background_light = 200;
+
+	for (int i = 0; i < BLOCK_TYPES_AMOUNT; i++) {
+		for (int j = 0; j < 3; j++) {
+			is_same_color[j] = pixel_rgba[j] ==
+			                   blocks[i].color[j];
+		}
+
+		int is_same = is_same_color[0] &&
+		              is_same_color[1] &&
+		              is_same_color[2];
+
+		if (is_same) {
+			ncplane_set_bg_rgb8(n, background_light,
+			                       background_light,
+			                       background_light);
+
+			ncplane_putchar_yx(n, FB_HEIGHT - y, x,
+			                   blocks[i].ascii);
+		}
+	}
+}
+
 void notcurses_render_ascii(struct notcurses* nc, struct ncplane* n,
                             unsigned char *frame_buffer, float *depth_buffer)
 {
-	for (int y = 0; y < FB_HEIGHT; y++) {
-		for (int x = 0; x < FB_WIDTH; x++) {
-			//ncplane_cursor_move_yx(n, y, x);
+	for (int i = 0; i < FB_PIXELS_AMOUNT; i++) {
+		float depth = depth_buffer[i];
+		unsigned char *pixel_rgba = frame_buffer + 4 * i;
 
-			int idx = (y * FB_WIDTH + x) * 4;
-			float depth = depth_buffer[y * FB_WIDTH + x];
-			unsigned char *pixels = frame_buffer + idx;
-
-			int background = (int)(255 * (1 /
-			                 exp(150 - 150 * depth)));
-			int is_same_color[3];
-
-			if (background < 0)
-				background = 0;
-			if (background > 200)
-				background = 200;
-
-			for (int i = 0; i < BLOCK_TYPES_AMOUNT; i++) {
-				for (int j = 0; j < 3; j++) {
-					is_same_color[j] = pixels[j] ==
-					                   blocks[i].color[j];
-				}
-
-				int is_same = is_same_color[0] &&
-				              is_same_color[1] &&
-				              is_same_color[2];
-				if (is_same) {
-					ncplane_set_bg_rgb8(n, background,
-					                       background,
-					                       background);
-					ncplane_putchar_yx(n, FB_HEIGHT - y, x,
-					                   blocks[i].ascii);
-				}
-			}
-		}
+		notcurses_putpixel(n, pixel_rgba, depth, i);
 	}
-
-	return;
 }
 
-void stat_render(struct notcurses* nc, struct ncplane* n, struct time time){
+void stat_render(struct notcurses* nc, struct ncplane* n, struct time time) {
 	struct ncplane_options opts = {
-		.y = 0,              // Строка 5 (относительно родителя)
-		.x = FB_WIDTH - 80,             // Колонка 10
-		.rows = 20,          // Высота 10 строк
-		.cols = 80,          // Ширина 20 столбцов
-		.userptr = NULL,     // Без пользовательских данных
-		.name = "child",     // Имя для отладки
-		.resizecb = NULL,    // Без колбэка
-		.flags = 0,          // Без флагов
+		.y = 0,
+		.x = FB_WIDTH - 80,
+		.rows = 20,
+		.cols = 80,
+		.userptr = NULL,
+		.name = "child",
+		.resizecb = NULL,
+		.flags = 0,
 	};
 
-	// Создаём дочернюю плоскость
 	struct ncplane* child_plane = ncplane_create(n, &opts);
 
-	// Пример вывода текста в дочерней плоскости
 	for (int y = 0; y < opts.rows; y++) {
 		for (int x = 0; x < opts.cols; x++) {
 			ncplane_set_bg_rgb8(child_plane, 0, 0, 0);

@@ -35,16 +35,15 @@ struct player {
 struct camera create_camera(void);
 struct player create_player(void);
 
+int is_chunk_changed(vec3 player_vec_pos, struct position *prev_chunk);
+
 void processInput(GLFWwindow * window, struct player *player,
                   struct chunk *chunks, struct position *selected_block);
 void update_camera_direction(struct camera *cam);
 
-void save_chunk_pos(vec3 *player_pos, struct position *chunk_pos);
-int is_chunk_changed(vec3 player_pos, struct position *prev_chunk);
-
 int select_block(struct player player, struct chunk *chunks,
                  struct position *selected_block);
-char get_world_block(struct position block, struct chunk *chunks, int count);
+char get_world_block(struct position block, struct chunk *chunks);
 
 void calculate_fps(struct time *time);
 

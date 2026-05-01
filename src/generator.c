@@ -93,10 +93,62 @@ void load_chunk(char *chunk_data, FILE *file)
 
 char chunk_gen_logic(struct position *gpos)
 {
+	int result;
+
+	switch (GENERATION_TYPE) {
+		case FLAT:
+			result = generate_flat(gpos);
+			break;
+		case CAVES:
+			result = generate_caves(gpos);
+			break;
+		case MENGERS_SPONGE:
+			result = generate_mengers_sponge(gpos);
+			break;
+		case PILLARS:
+			result = generate_pillars(gpos);
+			break;
+		case MOUNTAIN:
+			result = generate_mountain(gpos);
+			break;
+		case SKY_GRID:
+			result = generate_sky_grid(gpos);
+			break;
+	}
+
+	return result;
+}
+
+int generate_flat(struct position *gpos)
+{
+	int result;
+
+	result = generate_platform(gpos);
+
+	if (result != UNDEFINED_BLOCK)
+		return result;
+
+	if (gpos->z > 0) {
+		result = AIR;
+	} else {
+		result = STONE;
+	}
+
+	return result;
+}
+
+int generate_caves(struct position *gpos)
+{
 	float perlin_value, biome_value;
-	char result = AIR;
-	vec3 point, biome_point, vec_pos;
-/*
+	int result = AIR;
+	vec3 point, biome_point;
+	vec3 vec_pos;
+
+	result = generate_platform(gpos);
+
+	if (result != UNDEFINED_BLOCK)
+		return result;
+
 	pos2vec(gpos, vec_pos);
 
 	point[0] = vec_pos[0] / 20.0f;
@@ -110,9 +162,8 @@ char chunk_gen_logic(struct position *gpos)
 	perlin_value = glm_perlin_vec3(point);
 	biome_value = glm_perlin_vec3(biome_point);
 
-	if ((perlin_value + 1.0f) * (biome_value + 1.0f) <= 1.0f) {
+	if ((perlin_value + 1.0f) * (biome_value + 1.0f) <= 1.0f)
 		result = STONE;
-	}
 
 	if (result == STONE) {
 		point[0] = vec_pos[0] / 10.0f;
@@ -126,27 +177,22 @@ char chunk_gen_logic(struct position *gpos)
 	}
 
 	return result;
-*/
+}
 
+int generate_mengers_sponge(struct position *gpos)
+{
 	struct position pos;
-	int R = 10;
+	int result;
+	int is_block[3] = {1, 1, 1};
+
+	result = generate_platform(gpos);
+
+	if (result != UNDEFINED_BLOCK)
+		return result;
 
 	pos.x = gpos->x;
 	pos.y = gpos->y;
 	pos.z = gpos->z;
-
-	int distance = pow(pos.x, 2) + pow(pos.y, 2) + pow(pos.z, 2);
-
-	if(distance < pow(R, 2))
-	{
-		if (pos.z >= 0) {
-			return AIR;
-		} else {
-			return STONE;
-		}
-	}
-
-	int is_block[3] = {1, 1, 1};
 
 	while (pos.x || pos.y || pos.z) {
 		is_block[0] = abs(pos.x) % 3 == 1;
@@ -160,6 +206,115 @@ char chunk_gen_logic(struct position *gpos)
 		if (is_block[0] + is_block[1] + is_block[2] >= 2)
 			return AIR;
 	}
+
+	return STONE;
+}
+
+int generate_pillars(struct position *gpos)
+{
+	float perlin_value;
+	int result;
+	vec3 vec_pos, point;
+
+	result = generate_platform(gpos);
+
+	if (result != UNDEFINED_BLOCK)
+		return result;
+
+	pos2vec(gpos, vec_pos);
+
+	point[0] = vec_pos[0] / 4.0f;
+	point[1] = vec_pos[1] / 4.0f;
+	point[2] = 0.0f;
+
+	perlin_value = glm_perlin_vec3(point);
+
+	if (perlin_value <= 0.5f)
+		return AIR;
+
+	point[0] = vec_pos[0] / 7.5f + 100.0f;
+	point[1] = vec_pos[1] / 7.5f + 200.0f;
+	point[2] = vec_pos[2] / 7.5f + 300.0f;
+
+	perlin_value = glm_perlin_vec3(point);
+
+	if (perlin_value >= 0.5f)
+		return ORE;
+
+	return STONE;
+}
+
+int generate_mountain(struct position *gpos)
+{
+	float mountain_radius = 1.0f * fabs(gpos->z - 1.5f * PLATFORM_RADIUS);
+	float pos_radius = pow(pow(gpos->x, 2.0f) +
+	                       pow(gpos->y, 2.0f), 0.5f);
+	float perlin_value;
+	int result;
+	vec3 vec_pos, point;
+
+	result = generate_platform(gpos);
+
+	if (result != UNDEFINED_BLOCK)
+		return result;
+
+	if (gpos->z > 0 || mountain_radius < pos_radius)
+		return AIR;
+
+	pos2vec(gpos, vec_pos);
+
+	point[0] = vec_pos[0] / 10.0f;
+	point[1] = vec_pos[1] / 10.0f;
+	point[2] = vec_pos[2] / 5.0f;
+
+	perlin_value = glm_perlin_vec3(point);
+
+	if (perlin_value >= 0.0f)
+		return AIR;
+
+	point[0] = vec_pos[0] / 7.5f + 100.0f;
+	point[1] = vec_pos[1] / 7.5f + 200.0f;
+	point[2] = vec_pos[2] / 7.5f + 300.0f;
+
+	perlin_value = glm_perlin_vec3(point);
+
+	if (perlin_value >= 0.5f)
+		return ORE;
+
+	return STONE;
+}
+
+int generate_sky_grid(struct position *gpos)
+{
+	int result;
+	int is_solid;
+
+	result = generate_platform(gpos);
+
+	if (result != UNDEFINED_BLOCK)
+		return result;
+
+	is_solid = gpos->x % 4 == 0 &&
+	           gpos->y % 4 == 0 &&
+		   gpos->z % 4 == 0;
+
+	if (!is_solid)
+		return AIR;
+
+	return STONE;
+}
+
+int generate_platform(struct position *gpos)
+{
+	float lenght = pow(pow(gpos->x, 2.0f) +
+	                   pow(gpos->y, 2.0f) +
+	                   pow(gpos->z, 2.0f), 0.5f);
+
+	if (lenght > PLATFORM_RADIUS)
+		return UNDEFINED_BLOCK;
+
+	if (gpos->z >= 0)
+		return AIR;
 
 	return STONE;
 }
@@ -184,19 +339,19 @@ struct position gpos2chunkpos(struct position *pos)
 	if (pos->x >= 0) {
 		chunk_pos.x = pos->x / CHUNK_SIZE;
 	} else {
-		chunk_pos.x = -((abs(pos->x) + 1) / CHUNK_SIZE);
+		chunk_pos.x = -((abs(pos->x) - 1) / CHUNK_SIZE) - 1;
 	}
 
 	if (pos->y >= 0) {
 		chunk_pos.y = pos->y / CHUNK_SIZE;
 	} else {
-		chunk_pos.y = -((abs(pos->y) + 1) / CHUNK_SIZE);
+		chunk_pos.y = -((abs(pos->y) - 1) / CHUNK_SIZE) - 1;
 	}
 
 	if (pos->z >= 0) {
 		chunk_pos.z = pos->z / CHUNK_SIZE;
 	} else {
-		chunk_pos.z = -((abs(pos->z) + 1) / CHUNK_SIZE);
+		chunk_pos.z = -((abs(pos->z) - 1) / CHUNK_SIZE) - 1;
 	}
 
 	return chunk_pos;
@@ -275,4 +430,3 @@ int lpos2index(struct position *pos, const int SIDE)
 
 	return index;
 }
-

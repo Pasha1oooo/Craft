@@ -6,38 +6,12 @@
 #include "generator.h"
 #include "logic.h"
 
-void save_chunk_pos(vec3 *player_pos, struct position *chunk_pos)
+int is_chunk_changed(vec3 player_vec_pos, struct position *prev_chunk)
 {
-	chunk_pos->x = (int)(*player_pos)[0] / CHUNK_SIZE;
-	chunk_pos->y = (int)(*player_pos)[1] / CHUNK_SIZE;
-	chunk_pos->z = (int)(*player_pos)[2] / CHUNK_SIZE;
-
-	if ((*player_pos)[0] < 0.0f)
-		chunk_pos->x--;
-	if ((*player_pos)[1] < 0.0f)
-		chunk_pos->y--;
-	if ((*player_pos)[2] < 0.0f)
-		chunk_pos->z--;
-
-	return;
-}
-
-int is_chunk_changed(vec3 player_pos, struct position *prev_chunk)
-{
-	struct position current_chunk;
+	struct position gpos = vec2pos(player_vec_pos);
+	struct position current_chunk = gpos2chunkpos(&gpos);
 	int is_chunk_changed[3];
 	int is_changed = 0;
-
-	current_chunk.x = (int)player_pos[0] / CHUNK_SIZE;
-	current_chunk.y = (int)player_pos[1] / CHUNK_SIZE;
-	current_chunk.z = (int)player_pos[2] / CHUNK_SIZE;
-
-	if (player_pos[0] < 0.0f)
-		current_chunk.x--;
-	if (player_pos[1] < 0.0f)
-		current_chunk.y--;
-	if (player_pos[2] < 0.0f)
-		current_chunk.z--;
 
 	is_chunk_changed[0] = current_chunk.x != prev_chunk->x;
 	is_chunk_changed[1] = current_chunk.y != prev_chunk->y;
@@ -50,37 +24,16 @@ int is_chunk_changed(vec3 player_pos, struct position *prev_chunk)
 	return is_changed;
 }
 
-void break_block(struct position *block_pos, struct chunk *chunks)
+void break_block(struct position *block_gpos, struct chunk *chunks)
 {
-	struct position chunk_pos;
-	struct position local_block_pos;
-	int block_index;
-
-	chunk_pos.x = block_pos->x / 16;
-	chunk_pos.y = block_pos->y / 16;
-	chunk_pos.z = block_pos->z / 16;
-
-	if (block_pos->x < 0)
-		chunk_pos.x--;
-	if (block_pos->y < 0)
-		chunk_pos.y--;
-	if (block_pos->z < 0)
-		chunk_pos.z--;
-
-	local_block_pos.x = block_pos->x - 16 * chunk_pos.x;
-	local_block_pos.y = block_pos->y - 16 * chunk_pos.y;
-	local_block_pos.z = block_pos->z - 16 * chunk_pos.z;
-
-	block_index = 256 * local_block_pos.z +
-	               16 * local_block_pos.y +
-	                    local_block_pos.x;
-
-	int is_chunk_selected;
+	struct position chunk_pos = gpos2chunkpos(block_gpos);
+	struct position block_lpos = gpos2lpos(block_gpos);
+	int block_index = lpos2index(&block_lpos, CHUNK_SIZE);
 
 	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
-		is_chunk_selected = chunks[i].pos->x == chunk_pos.x &&
-		                    chunks[i].pos->y == chunk_pos.y &&
-		                    chunks[i].pos->z == chunk_pos.z;
+		int is_chunk_selected = chunks[i].pos->x == chunk_pos.x &&
+		                        chunks[i].pos->y == chunk_pos.y &&
+		                        chunks[i].pos->z == chunk_pos.z;
 
 		if (is_chunk_selected) {
 			chunks[i].chunk_data[block_index] = AIR;
@@ -90,8 +43,6 @@ void break_block(struct position *block_pos, struct chunk *chunks)
 			break;
 		}
 	}
-
-	return;
 }
 
 void processInput(GLFWwindow * window, struct player *player,
@@ -140,12 +91,8 @@ void processInput(GLFWwindow * window, struct player *player,
 		player->head.FOV = 90.0f;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-		if (selected_block->x == -1)
-			return;
-
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 		break_block(selected_block, chunks);
-	}
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
 		player->head.pitch += 5.0f;
@@ -155,6 +102,7 @@ void processInput(GLFWwindow * window, struct player *player,
 
 		update_camera_direction(&player->head);
 	}
+
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
 		player->head.pitch -= 5.0f;
 
@@ -163,6 +111,7 @@ void processInput(GLFWwindow * window, struct player *player,
 
 		update_camera_direction(&player->head);
 	}
+
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS){
 		player->head.yaw -= 5.0f;
 
@@ -171,6 +120,7 @@ void processInput(GLFWwindow * window, struct player *player,
 
 		update_camera_direction(&player->head);
 	}
+
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS){
 		player->head.yaw += 5.0f;
 
@@ -179,16 +129,16 @@ void processInput(GLFWwindow * window, struct player *player,
 
 		update_camera_direction(&player->head);
 	}
+
 	if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS){
 		player->head.roll+=2;
 		update_camera_direction(&player->head);
 	}
+
 	if (glfwGetKey(window, GLFW_KEY_COMMA) == GLFW_PRESS){
 		player->head.roll-=2;
 		update_camera_direction(&player->head);
 	}
-
-	return;
 }
 
 void update_camera_direction(struct camera *cam)
@@ -224,7 +174,7 @@ struct camera create_camera(void)
 
 	camera.cameraPos[0] = 0.0f;
 	camera.cameraPos[1] = 0.0f;
-	camera.cameraPos[2] = 0.0f;
+	camera.cameraPos[2] = 0.5f;
 
 	update_camera_direction(&camera);
 
@@ -241,35 +191,29 @@ struct player create_player(void)
 	struct player player;
 
 	player.head = create_camera();
-	player.position[0] = -4;
-	player.position[1] = 0;
-	player.position[2] = 1;
+	player.position[0] = 0.0f;
+	player.position[1] = 0.0f;
+	player.position[2] = 3.0f;
 	player.speed = 0.2f;
 	player.rotation_speed = 0.2f;
 
 	return player;
 }
 
-char get_world_block(struct position w, struct chunk *chunks, int count) {
-	// целочисленное деление с округлением вниз для отрицательных чисел
-	int cx = (w.x >= 0) ? w.x / 16 : (w.x - 15) / 16;
-	int cy = (w.y >= 0) ? w.y / 16 : (w.y - 15) / 16;
-	int cz = (w.z >= 0) ? w.z / 16 : (w.z - 15) / 16;
+char get_world_block(struct position gpos, struct chunk *chunks)
+{
+	struct position chunk_pos = gpos2chunkpos(&gpos);
+	struct position lpos = gpos2lpos(&gpos);
+	int index = lpos2index(&lpos, CHUNK_SIZE);
+	int is_equal_pos;
 
-	int lx = w.x - cx * 16;
-	int ly = w.y - cy * 16;
-	int lz = w.z - cz * 16;
+	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
+		is_equal_pos = chunks[i].pos->x == chunk_pos.x &&
+		               chunks[i].pos->y == chunk_pos.y &&
+		               chunks[i].pos->z == chunk_pos.z;
 
-	int is_cx_equal_pos;
-	int j = 256 * lz + 16 * ly + lx;
-
-	for (int i = 0; i < count; i++) {
-		is_cx_equal_pos = chunks[i].pos->x == cx &&
-		                  chunks[i].pos->y == cy &&
-		                  chunks[i].pos->z == cz;
-
-		if (is_cx_equal_pos)
-			return chunks[i].chunk_data[j];
+		if (is_equal_pos)
+			return chunks[i].chunk_data[index];
 	}
 
 	return 0;
@@ -278,37 +222,54 @@ char get_world_block(struct position w, struct chunk *chunks, int count) {
 int select_block(struct player player, struct chunk *chunks,
                  struct position *selected_block)
 {
-	const int CHUNK_AMOUNT = pow(2 * RENDER_DISTANCE - 1, 3);
 	struct position ray_pos;
+	struct position step;
 	vec3 dir;
+	vec3 delta;
+	vec3 t_max;
 
 	glm_vec3_copy(player.head.cameraDirection, dir);
 	glm_vec3_normalize(dir);
 
-	ray_pos.x = (int)floorf(player.head.cameraPos[0]);
-	ray_pos.y = (int)floorf(player.head.cameraPos[1]);
-	ray_pos.z = (int)floorf(player.head.cameraPos[2]);
+	ray_pos = vec2pos(player.head.cameraPos);
 
-	int step_x = (dir[0] > 0) ? 1 : -1;
-	int step_y = (dir[1] > 0) ? 1 : -1;
-	int step_z = (dir[2] > 0) ? 1 : -1;
+	step.x = (dir[0] > 0.0f) ? 1 : -1;
+	step.y = (dir[1] > 0.0f) ? 1 : -1;
+	step.z = (dir[2] > 0.0f) ? 1 : -1;
 
-	float delta_x = (dir[0] != 0) ? fabsf(1.0f / dir[0]) : 1e10f;
-	float delta_y = (dir[1] != 0) ? fabsf(1.0f / dir[1]) : 1e10f;
-	float delta_z = (dir[2] != 0) ? fabsf(1.0f / dir[2]) : 1e10f;
+	if (dir[0] != 0.0f) {
+		delta[0] = fabsf(1.0f / dir[0]);
+		t_max[0] = ray_pos.x;
+		t_max[0] += step.x > 0 ? 1.0f : 0.0f;
+		t_max[0] = (t_max[0] - player.head.cameraPos[0]) / dir[0];
+	} else {
+		delta[0] = 1e10f;
+		t_max[0] = 1e10f;
+	}
 
-	float tMaxX = dir[0] ? ((step_x > 0 ? ray_pos.x + 1 : ray_pos.x) -
-	                       player.head.cameraPos[0]) / dir[0] : 1e10f;
-	float tMaxY = dir[1] ? ((step_y > 0 ? ray_pos.y + 1 : ray_pos.y) -
-	                       player.head.cameraPos[1]) / dir[1] : 1e10f;
-	float tMaxZ = dir[2] ? ((step_z > 0 ? ray_pos.z + 1 : ray_pos.z) -
-	                       player.head.cameraPos[2]) / dir[2] : 1e10f;
+	if (dir[1] != 0.0f) {
+		delta[1] = fabsf(1.0f / dir[1]);
+		t_max[1] = ray_pos.y;
+		t_max[1] += step.y > 0 ? 1.0f : 0.0f;
+		t_max[1] = (t_max[1] - player.head.cameraPos[1]) / dir[1];
+	} else {
+		delta[1] = 1e10f;
+		t_max[1] = 1e10f;
+	}
+
+	if (dir[2] != 0.0f) {
+		delta[2] = fabsf(1.0f / dir[2]);
+		t_max[2] = ray_pos.z;
+		t_max[2] += step.z > 0 ? 1.0f : 0.0f;
+		t_max[2] = (t_max[2] - player.head.cameraPos[2]) / dir[2];
+	} else {
+		delta[2] = 1e10f;
+		t_max[2] = 1e10f;
+	}
 
 	for (int i = 0; i < 100; i++) {
-		int is_block = get_world_block(ray_pos, chunks,
-		                               CHUNK_AMOUNT) == '*' ||
-		               get_world_block(ray_pos, chunks,
-		                               CHUNK_AMOUNT) == '#';
+		int is_block = get_world_block(ray_pos, chunks) == STONE ||
+		               get_world_block(ray_pos, chunks) == ORE;
 		if (is_block) {
 			selected_block->x = ray_pos.x;
 			selected_block->y = ray_pos.y;
@@ -317,20 +278,20 @@ int select_block(struct player player, struct chunk *chunks,
 			return 1;
 		}
 
-		if (tMaxX < tMaxY) {
-			if (tMaxX < tMaxZ) {
-				ray_pos.x += step_x;
-				tMaxX += delta_x;
+		if (t_max[0] < t_max[1]) {
+			if (t_max[0] < t_max[2]) {
+				ray_pos.x += step.x;
+				t_max[0] += delta[0];
 			} else {
-				ray_pos.z += step_z;
-				tMaxZ += delta_z; }
+				ray_pos.z += step.z;
+				t_max[2] += delta[2]; }
 		} else {
-			if (tMaxY < tMaxZ) {
-				ray_pos.y += step_y;
-				tMaxY += delta_y;
+			if (t_max[1] < t_max[2]) {
+				ray_pos.y += step.y;
+				t_max[1] += delta[1];
 			} else {
-				ray_pos.z += step_z;
-				tMaxZ += delta_z;
+				ray_pos.z += step.z;
+				t_max[2] += delta[2];
 			}
 		}
 	}
@@ -348,6 +309,4 @@ void calculate_fps(struct time *time)
 	time->fps = 1.0f / delta_time;
 
 	time->start = glfwGetTime();
-
-	return;
 }

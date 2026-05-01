@@ -18,98 +18,167 @@ const float PLAYER_HEIGHT = 1.8f;
 const float EYES_HEIGHT = 1.6f;
 const float BLOCK_SIZE = 1.0f;
 
-// optimize
-struct position box_box_intersect(struct chunk *chunks, struct player *player)
+struct position player_block_intersect(struct position block_gpos,
+                                       vec3 player_vec_pos)
 {
-	const int CHUNKS_AMOUNT = pow(2 * RENDER_DISTANCE - 1, 3);
-	const float MIN_DIFF = 0.1f;
-	struct position is_intersect = {.x = 0, .y = 0, .z = 0};
-	struct position tmp_is_intersect;;
-	vec3 block_pos;
-	vec3 chunk_offset;
+	struct position is_side_intersect;
+	struct position tmp_is_intersect;
+	vec3 block_vec_pos;
 	vec3 block_player_distance;
-	int intersection;
+	int is_intesrect;
 
-	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
-		chunk_offset[0] = CHUNK_SIZE * (float)chunks[i].pos->x;
-		chunk_offset[1] = CHUNK_SIZE * (float)chunks[i].pos->y;
-		chunk_offset[2] = CHUNK_SIZE * (float)chunks[i].pos->z;
+	int vertical_intersect[2];
 
-		for (int j = 0; j < BLOCKS_IN_CHUNK; j++) {
-			if (chunks[i].chunk_data[j] == ' ')
-				continue;
+	pos2vec(&block_gpos, block_vec_pos);
+	glm_vec3_sub(player_vec_pos, block_vec_pos, block_player_distance);
 
-			block_pos[0] = chunk_offset[0] + j % CHUNK_SIZE;
-			block_pos[1] = chunk_offset[1] + (j / CHUNK_SIZE)
-			               % CHUNK_SIZE;
-			block_pos[2] = chunk_offset[2] + j / (CHUNK_SIZE *
-			                                      CHUNK_SIZE);
+	block_player_distance[0] = fabs(block_player_distance[0]);
+	block_player_distance[1] = fabs(block_player_distance[1]);
 
-			block_player_distance[0] = fabs(block_pos[0] -
-			                                player->position[0]);
+	vertical_intersect[0] = block_player_distance[2] >= 0 &&
+	                        block_player_distance[2] < BLOCK_SIZE / 2.0f +
+	                        EYES_HEIGHT;
 
-			block_player_distance[1] = fabs(block_pos[1] -
-			                                player->position[1]);
+	vertical_intersect[1] = block_player_distance[2] < 0 &&
+	                       -block_player_distance[2] < BLOCK_SIZE / 2.0f +
+	                        PLAYER_HEIGHT - EYES_HEIGHT;
 
-			block_player_distance[2] = block_pos[2] -
-			                           player->position[2];
+	tmp_is_intersect.x = block_player_distance[0] <
+	                     (BLOCK_SIZE + PLAYER_WIDTH) / 2.0f;
 
-			tmp_is_intersect.x = block_player_distance[0] <
-			                    (BLOCK_SIZE + PLAYER_WIDTH) / 2.0f;
+	tmp_is_intersect.y = block_player_distance[1] <
+	                     (BLOCK_SIZE + PLAYER_WIDTH) / 2.0f;
 
-			tmp_is_intersect.y = block_player_distance[1] <
-			                    (BLOCK_SIZE + PLAYER_WIDTH) / 2.0f;
+	tmp_is_intersect.z = vertical_intersect[0] + vertical_intersect[1];
 
-			tmp_is_intersect.z = block_player_distance[2] <
-			                     BLOCK_SIZE / 2.0f +
-			                    (PLAYER_HEIGHT - EYES_HEIGHT) &&
+	is_intesrect = tmp_is_intersect.x &&
+	               tmp_is_intersect.y &&
+	               tmp_is_intersect.z;
 
-			                    -block_player_distance[2] <
-			                     BLOCK_SIZE / 2.0f + EYES_HEIGHT;
+	if (!is_intesrect) {
+		is_side_intersect.x = 0;
+		is_side_intersect.y = 0;
+		is_side_intersect.z = 0;
 
-			intersection = tmp_is_intersect.x &&
-			               tmp_is_intersect.y &&
-			               tmp_is_intersect.z;
-
-			if (!intersection)
-				continue;
-
-			if (!is_intersect.x) {
-				is_intersect.x = block_player_distance[0] >
-				                 block_player_distance[1] +
-				                 MIN_DIFF;
-			}
-
-			if (!is_intersect.y) {
-				is_intersect.y = block_player_distance[1] >
-				                 block_player_distance[0] +
-				                 MIN_DIFF;
-			}
-
-			if (!is_intersect.z) {
-			}
-		}
+		return is_side_intersect;
 	}
 
-	return is_intersect;
+	is_side_intersect.x = block_player_distance[0] >
+	                      block_player_distance[1];
+
+	is_side_intersect.y = block_player_distance[1] >
+	                      block_player_distance[0];
+
+	is_side_intersect.z = tmp_is_intersect.z;
+
+	if (!is_side_intersect.x &&
+	    !is_side_intersect.y &&
+	    !is_side_intersect.z) {
+
+		is_side_intersect.x = 0;
+		is_side_intersect.y = 0;
+		is_side_intersect.z = 0;
+	}
+
+	return is_side_intersect;
 }
 
-const int MOVE_STEPS = 100;
+int calculate_collision_area(struct position *collision_area_side)
+{
+	int collision_area_volume;
+
+	collision_area_side->x = 2 * floor(PLAYER_WIDTH) + 3;
+	collision_area_side->y = 2 * floor(PLAYER_WIDTH) + 3;
+	collision_area_side->z = floor(PLAYER_HEIGHT) + 4;
+
+	collision_area_volume = collision_area_side->x *
+	                        collision_area_side->y *
+	                        collision_area_side->z;
+
+	return collision_area_volume;
+}
+
+struct position check_intersect(struct chunk *chunks, vec3 player_vec_pos)
+{
+	struct position player_gpos = vec2pos(player_vec_pos);
+	struct position block_gpos;
+	struct position saved_block_gpos;
+	struct position collision_area_side;
+	struct position is_side_intersect;
+	struct position result_intersect = {.x = 0, .y = 0, .z = 0};
+	int collision_area_volume = calculate_collision_area(
+	                            &collision_area_side);
+	int is_solid;
+
+	saved_block_gpos.x = player_gpos.x - collision_area_side.x / 2;
+	saved_block_gpos.y = player_gpos.y - collision_area_side.y / 2;
+	saved_block_gpos.z = player_gpos.z - abs(EYES_HEIGHT) - 1;
+
+	printf("[%2d %2d %2d]\n", player_gpos.x, player_gpos.y, player_gpos.z);
+
+	for (int i = 0; i < collision_area_volume; i++) {
+		block_gpos.x = saved_block_gpos.x + i % collision_area_side.x;
+		block_gpos.y = saved_block_gpos.y + (i / collision_area_side.y)
+		               % collision_area_side.y;
+		block_gpos.z = saved_block_gpos.z + (i / collision_area_side.z)
+		               / collision_area_side.y;
+
+		printf("<%2d %2d %2d>\n", block_gpos.x, block_gpos.y, block_gpos.z);
+		is_solid = get_world_block(block_gpos, chunks) == STONE ||
+		           get_world_block(block_gpos, chunks) == ORE;
+
+		if (!is_solid)
+			continue;
+
+		is_side_intersect = player_block_intersect(block_gpos,
+		                                           player_vec_pos);
+
+		if (!result_intersect.x)
+			result_intersect.x = is_side_intersect.x;
+
+		if (!result_intersect.y)
+			result_intersect.y = is_side_intersect.y;
+
+		if (!result_intersect.x)
+			result_intersect.z = is_side_intersect.z;
+	}
+
+	return result_intersect;
+}
+
+const int COLLISION_STEPS = 1;
 
 void process_collisions(struct chunk *chunks, struct player *player)
 {
-	struct position collision = box_box_intersect(chunks, player);
+	struct position is_collision;
+	vec3 delta_vec_pos;
 
-	if (collision.x)
-		player->position[0] = player->prev_position[0];
-	if (collision.y)
-		player->position[1] = player->prev_position[1];
-	if (collision.z)
-		player->position[2] = player->prev_position[2];
+	glm_vec3_sub(player->position, player->prev_position, delta_vec_pos);
+	glm_vec3_scale(delta_vec_pos,
+	               1.0f / (float)COLLISION_STEPS,
+	               delta_vec_pos);
 
-	player->prev_position[0] = player->position[0];
-	player->prev_position[1] = player->position[1];
-	player->prev_position[2] = player->position[2];
+	glm_vec3_copy(player->prev_position, player->position);
+
+	for (int i = 0; i < COLLISION_STEPS; i++) {
+
+		glm_vec3_add(player->position,
+		             delta_vec_pos,
+		             player->position);
+
+		is_collision = check_intersect(chunks, player->position);
+
+		if (is_collision.x)
+			player->position[0] = player->prev_position[0];
+		if (is_collision.y)
+			player->position[1] = player->prev_position[1];
+		if (is_collision.z)
+			player->position[2] = player->prev_position[2];
+
+		player->prev_position[0] = player->position[0];
+		player->prev_position[1] = player->position[1];
+		player->prev_position[2] = player->position[2];
+	}
 
 	return;
 }
@@ -162,6 +231,7 @@ int main(void)
 	projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
 	player = create_player();
+	get_chunks(loaded_chunks, player.head.cameraPos);
 
 	time.start = glfwGetTime();
 	struct position selected_block;
@@ -190,7 +260,6 @@ int main(void)
 		           player.head.cameraUp,
 		           view);
 
-
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (float *)view);
 
 		glm_perspective(glm_rad(player.head.FOV), (float)FB_WIDTH /
@@ -205,8 +274,10 @@ int main(void)
 		                     &saved_chunk_pos)) {
 
 			get_chunks(loaded_chunks, player.head.cameraPos);
-			save_chunk_pos(&player.head.cameraPos,
-			               &saved_chunk_pos);
+
+			struct position player_gpos = vec2pos(
+			                              player.head.cameraPos);
+			saved_chunk_pos = gpos2chunkpos(&player_gpos);
 		}
 
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
@@ -266,7 +337,7 @@ int main(void)
 
 		notcurses_render_ascii(nc, n, frame_buffer, depth_buffer);
 		//stat_render(nc, n, time);
-		notcurses_render(nc);
+//		notcurses_render(nc);
 
 		glfwPollEvents();
 

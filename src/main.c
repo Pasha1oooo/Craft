@@ -18,169 +18,116 @@ const float PLAYER_HEIGHT = 1.8f;
 const float EYES_HEIGHT = 1.6f;
 const float BLOCK_SIZE = 1.0f;
 
-struct position player_block_intersect(struct position block_gpos,
-                                       vec3 player_vec_pos)
+int is_block_solid(struct chunk *chunks, struct position *gpos)
 {
-	struct position is_side_intersect;
-	struct position tmp_is_intersect;
-	vec3 block_vec_pos;
-	vec3 block_player_distance;
-	int is_intesrect;
+	struct position chunk_gpos = gpos2chunkpos(gpos);
+	struct position chunk_lpos;
+	struct position lpos = gpos2lpos(gpos);
 
-	int vertical_intersect[2];
+	int chunk_index;
+	int block_index;
 
-	pos2vec(&block_gpos, block_vec_pos);
-	glm_vec3_sub(player_vec_pos, block_vec_pos, block_player_distance);
+	int block_type, is_solid;
 
-	block_player_distance[0] = fabs(block_player_distance[0]);
-	block_player_distance[1] = fabs(block_player_distance[1]);
+	chunk_lpos.x = chunk_gpos.x - chunks[0].pos->x;
+	chunk_lpos.y = chunk_gpos.y - chunks[0].pos->y;
+	chunk_lpos.z = chunk_gpos.z - chunks[0].pos->z;
 
-	vertical_intersect[0] = block_player_distance[2] >= 0 &&
-	                        block_player_distance[2] < BLOCK_SIZE / 2.0f +
-	                        EYES_HEIGHT;
+	chunk_index = lpos2index(&chunk_lpos, CHUNKS_SIDE);
+	block_index = lpos2index(&lpos, CHUNK_SIZE);
 
-	vertical_intersect[1] = block_player_distance[2] < 0 &&
-	                       -block_player_distance[2] < BLOCK_SIZE / 2.0f +
-	                        PLAYER_HEIGHT - EYES_HEIGHT;
 
-	tmp_is_intersect.x = block_player_distance[0] <
-	                     (BLOCK_SIZE + PLAYER_WIDTH) / 2.0f;
 
-	tmp_is_intersect.y = block_player_distance[1] <
-	                     (BLOCK_SIZE + PLAYER_WIDTH) / 2.0f;
+	block_type = chunks[chunk_index].chunk_data[block_index];
+	is_solid = block_type == STONE ||
+	           block_type == ORE;
 
-	tmp_is_intersect.z = vertical_intersect[0] + vertical_intersect[1];
-
-	is_intesrect = tmp_is_intersect.x &&
-	               tmp_is_intersect.y &&
-	               tmp_is_intersect.z;
-
-	if (!is_intesrect) {
-		is_side_intersect.x = 0;
-		is_side_intersect.y = 0;
-		is_side_intersect.z = 0;
-
-		return is_side_intersect;
-	}
-
-	is_side_intersect.x = block_player_distance[0] >
-	                      block_player_distance[1];
-
-	is_side_intersect.y = block_player_distance[1] >
-	                      block_player_distance[0];
-
-	is_side_intersect.z = tmp_is_intersect.z;
-
-	if (!is_side_intersect.x &&
-	    !is_side_intersect.y &&
-	    !is_side_intersect.z) {
-
-		is_side_intersect.x = 0;
-		is_side_intersect.y = 0;
-		is_side_intersect.z = 0;
-	}
-
-	return is_side_intersect;
+	return is_solid;
 }
 
-int calculate_collision_area(struct position *collision_area_side)
+void calculate_hitbox_vpos(vec3 player_vpos, vec3 hitbox_vpos)
 {
-	int collision_area_volume;
-
-	collision_area_side->x = 2 * floor(PLAYER_WIDTH) + 3;
-	collision_area_side->y = 2 * floor(PLAYER_WIDTH) + 3;
-	collision_area_side->z = floor(PLAYER_HEIGHT) + 4;
-
-	collision_area_volume = collision_area_side->x *
-	                        collision_area_side->y *
-	                        collision_area_side->z;
-
-	return collision_area_volume;
+	glm_vec3_copy(player_vpos, hitbox_vpos);
+	hitbox_vpos[2] += PLAYER_HEIGHT / 2.0f - EYES_HEIGHT;
 }
 
-struct position check_intersect(struct chunk *chunks, vec3 player_vec_pos)
+struct position calculate_blocks_area_size(void)
 {
-	struct position player_gpos = vec2pos(player_vec_pos);
-	struct position block_gpos;
-	struct position saved_block_gpos;
-	struct position collision_area_side;
-	struct position is_side_intersect;
-	struct position result_intersect = {.x = 0, .y = 0, .z = 0};
-	int collision_area_volume = calculate_collision_area(
-	                            &collision_area_side);
-	int is_solid;
+	struct position area_size;
 
-	saved_block_gpos.x = player_gpos.x - collision_area_side.x / 2;
-	saved_block_gpos.y = player_gpos.y - collision_area_side.y / 2;
-	saved_block_gpos.z = player_gpos.z - abs(EYES_HEIGHT) - 1;
+	area_size.x = 2 * floor(PLAYER_WIDTH  / 2.0f) + 3;
+	area_size.y = 2 * floor(PLAYER_WIDTH  / 2.0f) + 3;
+	area_size.z = 2 * floor(PLAYER_HEIGHT / 2.0f) + 3;
 
-	printf("[%2d %2d %2d]\n", player_gpos.x, player_gpos.y, player_gpos.z);
-
-	for (int i = 0; i < collision_area_volume; i++) {
-		block_gpos.x = saved_block_gpos.x + i % collision_area_side.x;
-		block_gpos.y = saved_block_gpos.y + (i / collision_area_side.y)
-		               % collision_area_side.y;
-		block_gpos.z = saved_block_gpos.z + (i / collision_area_side.z)
-		               / collision_area_side.y;
-
-		printf("<%2d %2d %2d>\n", block_gpos.x, block_gpos.y, block_gpos.z);
-		is_solid = get_world_block(block_gpos, chunks) == STONE ||
-		           get_world_block(block_gpos, chunks) == ORE;
-
-		if (!is_solid)
-			continue;
-
-		is_side_intersect = player_block_intersect(block_gpos,
-		                                           player_vec_pos);
-
-		if (!result_intersect.x)
-			result_intersect.x = is_side_intersect.x;
-
-		if (!result_intersect.y)
-			result_intersect.y = is_side_intersect.y;
-
-		if (!result_intersect.x)
-			result_intersect.z = is_side_intersect.z;
-	}
-
-	return result_intersect;
+	return area_size;
 }
 
-const int COLLISION_STEPS = 1;
+int is_colliding(vec3 dist)
+{
+	struct position is_side_colliding;
+	int is_colliding;
+
+	is_side_colliding.x = dist[0] < (BLOCK_SIZE + PLAYER_WIDTH)  / 2.0f;
+	is_side_colliding.y = dist[1] < (BLOCK_SIZE + PLAYER_WIDTH)  / 2.0f;
+	is_side_colliding.z = dist[2] < (BLOCK_SIZE + PLAYER_HEIGHT) / 2.0f;
+
+	is_colliding = is_side_colliding.x &&
+	               is_side_colliding.y &&
+	               is_side_colliding.z;
+
+	if (is_colliding)
+		printf("Collision\n");
+
+	return is_colliding;
+}
 
 void process_collisions(struct chunk *chunks, struct player *player)
 {
-	struct position is_collision;
-	vec3 delta_vec_pos;
+	struct position hitbox_gpos;
+	struct position blocks_area_size = calculate_blocks_area_size();
+	vec3 hitbox_vpos;
 
-	glm_vec3_sub(player->position, player->prev_position, delta_vec_pos);
-	glm_vec3_scale(delta_vec_pos,
-	               1.0f / (float)COLLISION_STEPS,
-	               delta_vec_pos);
+	int blocks_amount = blocks_area_size.x *
+	                    blocks_area_size.y *
+	                    blocks_area_size.z;
 
-	glm_vec3_copy(player->prev_position, player->position);
+	for (int i = 0; i < 3; i++) {
+		struct position saved_block_gpos;
 
-	for (int i = 0; i < COLLISION_STEPS; i++) {
+		glm_vec3_copy(player->prev_position, hitbox_vpos);
+		hitbox_vpos[i] = player->position[i];
+		calculate_hitbox_vpos(hitbox_vpos, hitbox_vpos);
 
-		glm_vec3_add(player->position,
-		             delta_vec_pos,
-		             player->position);
+		hitbox_gpos = vec2pos(hitbox_vpos);
 
-		is_collision = check_intersect(chunks, player->position);
+		saved_block_gpos.x = hitbox_gpos.x - blocks_area_size.x / 2;
+		saved_block_gpos.y = hitbox_gpos.y - blocks_area_size.y / 2;
+		saved_block_gpos.z = hitbox_gpos.z - blocks_area_size.z / 2;
 
-		if (is_collision.x)
-			player->position[0] = player->prev_position[0];
-		if (is_collision.y)
-			player->position[1] = player->prev_position[1];
-		if (is_collision.z)
-			player->position[2] = player->prev_position[2];
+		for (int j = 0; j < blocks_amount; j++) {
+			struct position block_gpos;
+			vec3 block_vpos;
+			vec3 dist;
 
-		player->prev_position[0] = player->position[0];
-		player->prev_position[1] = player->position[1];
-		player->prev_position[2] = player->position[2];
+			block_gpos.x = saved_block_gpos.x + j % blocks_area_size.x;
+			block_gpos.y = saved_block_gpos.y + j / blocks_area_size.x %
+			               blocks_area_size.y;
+			block_gpos.z = saved_block_gpos.z + j / blocks_area_size.x /
+			               blocks_area_size.y;
+
+			if (!is_block_solid(chunks, &block_gpos))
+				continue;
+
+			pos2vec(&block_gpos, block_vpos);
+			glm_vec3_sub(block_vpos, hitbox_vpos, dist);
+			glm_vec3_abs(dist, dist);
+
+			if (is_colliding(dist)) {
+				player->position[i] = player->prev_position[i];
+				break;
+			}
+		}
 	}
-
-	return;
 }
 
 int main(void)
@@ -231,6 +178,15 @@ int main(void)
 	projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
 	player = create_player();
+
+	player.position[0] = 0.0f;
+	player.position[1] = 0.0f;
+	player.position[2] = 2.0f;
+
+	player.prev_position[0] = 0.0f;
+	player.prev_position[1] = 0.0f;
+	player.prev_position[2] = 2.0f;
+
 	get_chunks(loaded_chunks, player.head.cameraPos);
 
 	time.start = glfwGetTime();

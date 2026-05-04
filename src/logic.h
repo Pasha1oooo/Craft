@@ -47,4 +47,10 @@ char get_world_block(struct position block, struct chunk *chunks);
 
 void calculate_fps(struct time *time);
 
+struct position calculate_blocks_area_size(void);
+void process_collisions(struct chunk *chunks, struct player *player);
+void calculate_hitbox_vpos(vec3 player_vpos, vec3 hitbox_vpos);
+int is_colliding(vec3 dist);
+int is_block_solid(struct chunk *chunks, struct position *gpos);
+
 #endif

@@ -7,11 +7,11 @@
 #include <cglm/cglm.h>
 #include <GLFW/glfw3.h>
 #include "generator.h"
+#include "logic.h"
 #include "render.h"
 #include "shader.h"
 #include "render.h"
 #include "texture.h"
-#include "logic.h"
 
 int main(void)
 {
@@ -172,11 +172,13 @@ int main(void)
 		player.prev_position[1] = player.position[1];
 		player.prev_position[2] = player.position[2];
 
+		calculate_fps(&time);
+
 		struct ncplane* n = notcurses_stdplane(nc);
 
 		notcurses_render_ascii(nc, n, frame_buffer, depth_buffer);
-		//stat_render(nc, n, time);
-//		notcurses_render(nc);
+		stat_render(nc, n, time);
+		notcurses_render(nc);
 
 		glfwPollEvents();
 

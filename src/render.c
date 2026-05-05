@@ -10,6 +10,7 @@
 #include "generator.h"
 #include "logic.h"
 #include "render.h"
+#include "text.h"
 
 const struct block blocks[BLOCK_TYPES_AMOUNT] = {
 	{{255, 255, 255, 255}, ORE  },
@@ -339,9 +340,9 @@ void notcurses_render_ascii(struct notcurses* nc, struct ncplane* n,
 void stat_render(struct notcurses* nc, struct ncplane* n, struct time time) {
 	struct ncplane_options opts = {
 		.y = 0,
-		.x = FB_WIDTH - 80,
-		.rows = 20,
-		.cols = 80,
+		.x = FB_WIDTH - 100,
+		.rows = 25,
+		.cols = 100,
 		.userptr = NULL,
 		.name = "child",
 		.resizecb = NULL,
@@ -349,6 +350,7 @@ void stat_render(struct notcurses* nc, struct ncplane* n, struct time time) {
 	};
 
 	struct ncplane* child_plane = ncplane_create(n, &opts);
+	char text[64];
 
 	for (int y = 0; y < opts.rows; y++) {
 		for (int x = 0; x < opts.cols; x++) {
@@ -357,7 +359,9 @@ void stat_render(struct notcurses* nc, struct ncplane* n, struct time time) {
 		}
 	}
 
-//	ncplane_printf_yx(child_plane, 0, 0, "FPS: %d", calculate_fps(&time));
+	sprintf(text, "FPS:%d", (int)time.fps);
+
+	print2menu(child_plane, text);
 
 	return;
 }

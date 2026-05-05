@@ -310,7 +310,7 @@ void calculate_fps(struct time *time)
 
 	time->end = glfwGetTime();
 
-	delta_time = time->end - time->start;
+	delta_time = (float)(time->end - time->start);
 	time->fps = 1.0f / delta_time;
 
 	time->start = glfwGetTime();
@@ -427,4 +427,3 @@ void process_collisions(struct chunk *chunks, struct player *player)
 		}
 	}
 }
-

@@ -17,6 +17,11 @@ enum render_parameters {
 	FPS_COUNT_TIME_INTERVAL = 3,
 };
 
+struct model_matrices {
+	mat4 *stone;
+	mat4 *ore;
+};
+
 struct block {
 	unsigned char color[4];
 	char ascii;
@@ -30,8 +35,10 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
                             unsigned int *VAO_highlight,
                             unsigned int *EBO_highlight);
 
-void render_chunks(struct chunk *chunks, unsigned int texture_stone,
-                   unsigned int texture_ore, unsigned int VAO);
+void render_chunks(struct chunk *chunks, struct model_matrices *mm,
+                   unsigned int texture_stone, unsigned int texture_ore,
+                   unsigned int VAO);
+
 void draw_chunk(struct chunk *chunk, mat4 **stone, mat4 **ore);
 
 struct notcurses *notcurses_prepare();

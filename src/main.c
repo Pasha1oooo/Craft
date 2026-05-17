@@ -13,6 +13,32 @@
 #include "render.h"
 #include "texture.h"
 
+const float GRAVITY = 0.05f;
+const float MAX_VELOCITY = 1.0f;
+
+void init_model_matrices(struct model_matrices *mm)
+{
+	mm->stone = (mat4 *)calloc(BLOCKS_IN_CHUNK, sizeof(mat4));
+	mm->ore   = (mat4 *)calloc(BLOCKS_IN_CHUNK, sizeof(mat4));
+}
+
+void deinit_model_matrices(struct model_matrices *mm)
+{
+	free(mm->stone);
+	free(mm->ore);
+}
+
+
+void process_gravity(struct player *player)
+{
+	if (!player->on_ground) {
+		if (abs(player->velocity[2]) < MAX_VELOCITY)
+			player->velocity[2] -= GRAVITY;
+	} else {
+		player->velocity[2] = 0;
+	}
+}
+
 int main(void)
 {
 	unsigned char *frame_buffer = (unsigned char*)calloc(FB_WIDTH *
@@ -32,6 +58,7 @@ int main(void)
 	struct time time;
 	struct player player;
 	struct chunk *loaded_chunks = init_chunks();
+	struct model_matrices model_matrices;
 
 	create_window(&window, FB_WIDTH, FB_HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -62,15 +89,8 @@ int main(void)
 
 	player = create_player();
 
-	player.position[0] = 0.0f;
-	player.position[1] = 0.0f;
-	player.position[2] = 2.0f;
-
-	player.prev_position[0] = 0.0f;
-	player.prev_position[1] = 0.0f;
-	player.prev_position[2] = 2.0f;
-
 	get_chunks(loaded_chunks, player.head.cameraPos);
+	init_model_matrices(&model_matrices);
 
 	time.start = glfwGetTime();
 	struct position selected_block;
@@ -79,8 +99,10 @@ int main(void)
 	while(!glfwWindowShouldClose(window)) {
 		mat4 projection;
 
+		process_gravity(&player);
 		processInput(window, &player, loaded_chunks, &selected_block);
 		process_collisions(loaded_chunks, &player);
+
 
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -121,7 +143,14 @@ int main(void)
 
 		glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 
-		render_chunks(loaded_chunks, texture, texture3, VAO);
+
+//		time.start = glfwGetTime();
+
+		render_chunks(loaded_chunks, &model_matrices,
+		              texture, texture3, VAO);
+
+//calculate_fps(&time);
+
 		glm_vec3_copy(player.position, player.head.cameraPos);
 
 		int is_block_selected = select_block(player,
@@ -172,6 +201,9 @@ int main(void)
 		player.prev_position[1] = player.position[1];
 		player.prev_position[2] = player.position[2];
 
+		//!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//		time.fps = player.on_ground;
+
 		calculate_fps(&time);
 
 		struct ncplane* n = notcurses_stdplane(nc);
@@ -189,6 +221,7 @@ int main(void)
 	free(depth_buffer);
 
 	deinit_chunks(loaded_chunks);
+	init_model_matrices(&model_matrices);
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &instanceVBO);

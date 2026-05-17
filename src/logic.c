@@ -11,6 +11,8 @@ const float PLAYER_HEIGHT = 1.8f;
 const float EYES_HEIGHT = 1.6f;
 const float BLOCK_SIZE = 1.0f;
 
+const float JUMP_FORCE = 0.5f;
+
 int is_chunk_changed(vec3 player_vec_pos, struct position *prev_chunk)
 {
 	struct position gpos = vec2pos(player_vec_pos);
@@ -84,8 +86,12 @@ void processInput(GLFWwindow * window, struct player *player,
 		                       player->head.cameraDirection[0];
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		player->position[2] += player->speed;
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS &&
+	    player->on_ground) {
+
+		player->velocity[2] += JUMP_FORCE;
+		player->on_ground = 0;
+	}
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		player->position[2] -= player->speed;
@@ -144,6 +150,10 @@ void processInput(GLFWwindow * window, struct player *player,
 		player->head.roll-=2;
 		update_camera_direction(&player->head);
 	}
+
+	player->position[0] += player->velocity[0];
+	player->position[1] += player->velocity[1];
+	player->position[2] += player->velocity[2];
 }
 
 void update_camera_direction(struct camera *cam)
@@ -196,11 +206,22 @@ struct player create_player(void)
 	struct player player;
 
 	player.head = create_camera();
+
 	player.position[0] = 0.0f;
 	player.position[1] = 0.0f;
-	player.position[2] = 3.0f;
+	player.position[2] = 2.0f;
+
+	player.prev_position[0] = 0.0f;
+	player.prev_position[1] = 0.0f;
+	player.prev_position[2] = 2.0f;
+
+	player.velocity[0] = 0.0f;
+	player.velocity[1] = 0.0f;
+	player.velocity[2] = 0.0f;
+
 	player.speed = 0.2f;
 	player.rotation_speed = 0.2f;
+	player.on_ground = 0;
 
 	return player;
 }
@@ -334,8 +355,6 @@ int is_block_solid(struct chunk *chunks, struct position *gpos)
 	chunk_index = lpos2index(&chunk_lpos, CHUNKS_SIDE);
 	block_index = lpos2index(&lpos, CHUNK_SIZE);
 
-
-
 	block_type = chunks[chunk_index].chunk_data[block_index];
 	is_solid = block_type == STONE ||
 	           block_type == ORE;
@@ -373,9 +392,6 @@ int is_colliding(vec3 dist)
 	               is_side_colliding.y &&
 	               is_side_colliding.z;
 
-	if (is_colliding)
-		printf("Collision\n");
-
 	return is_colliding;
 }
 
@@ -388,6 +404,8 @@ void process_collisions(struct chunk *chunks, struct player *player)
 	int blocks_amount = blocks_area_size.x *
 	                    blocks_area_size.y *
 	                    blocks_area_size.z;
+//	return; // !!!!!!!!!!!!!!!!
+//	player->on_ground = 0;
 
 	for (int i = 0; i < 3; i++) {
 		struct position saved_block_gpos;
@@ -422,6 +440,14 @@ void process_collisions(struct chunk *chunks, struct player *player)
 
 			if (is_colliding(dist)) {
 				player->position[i] = player->prev_position[i];
+
+				if (block_gpos.z < (int)(hitbox_vpos[2] -
+				    PLAYER_HEIGHT / 2.0f - 0.1f))
+					player->on_ground = 1;
+
+				if (i == 2)
+					player->velocity[2] = 0.0f;
+
 				break;
 			}
 		}

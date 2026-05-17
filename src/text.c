@@ -252,6 +252,11 @@ void putchar2menu(struct ncplane *child_plane, char ch, struct text_pos *pos)
 	if (ch == ' ')
 		return;
 
+	if (ch == '\n') {
+		pos->x = -CH_X_SIZE + 1;
+		pos->y += Y_INDENT + CH_Y_SIZE;
+	}
+
 	if (ch == ':') {
 		for (int i = pos->y; i < pos->y + CH_Y_SIZE; i++)
 			ncplane_printf_yx(child_plane, i, pos->x, "%s",

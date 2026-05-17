@@ -28,8 +28,11 @@ struct player {
 	struct time time;
 	vec3 position;
 	vec3 prev_position;
+	vec3 velocity;
 	float speed;
+	float jump_force;
 	float rotation_speed;
+	int on_ground;
 };
 
 struct camera create_camera(void);

@@ -225,23 +225,25 @@ void prepare_gl_environment(unsigned int *VBO, unsigned int *VAO,
 	glEnableVertexAttribArray(6);
 }
 
-void render_chunks(struct chunk *chunks, unsigned int texture_stone,
-                   unsigned int texture_ore, unsigned int VAO)
+void render_chunks(struct chunk *chunks, struct model_matrices *mm,
+                   unsigned int texture_stone, unsigned int texture_ore,
+                   unsigned int VAO)
 {
 	for (int i = 0; i < CHUNKS_AMOUNT; i++) {
-		mat4 *modelMatrices_stone = (mat4 *)calloc(BLOCKS_IN_CHUNK,
-		                                           sizeof(mat4));
-		mat4 *modelMatrices_ore = (mat4 *)calloc(BLOCKS_IN_CHUNK,
-		                                         sizeof(mat4));
+		for (int i = 0; i < BLOCKS_IN_CHUNK; i++) {
+			glm_mat4_zero(mm->stone[i]);
+			glm_mat4_zero(mm->ore[i]);
+		}
+
 		draw_chunk(&(chunks[i]),
-		           &modelMatrices_stone,
-		           &modelMatrices_ore);
+		           &(mm->stone),
+		           &(mm->ore));
 
 		glBindVertexArray(VAO);
 		glBindTexture(GL_TEXTURE_2D, texture_stone);
 		glBufferData(GL_ARRAY_BUFFER,
 		             BLOCKS_IN_CHUNK * sizeof(mat4),
-		             modelMatrices_stone, GL_STATIC_DRAW);
+		             mm->stone, GL_STATIC_DRAW);
 
 		glDrawElementsInstanced(GL_TRIANGLES,
 		                        sizeof(indices) / sizeof(indices[0]),
@@ -250,14 +252,11 @@ void render_chunks(struct chunk *chunks, unsigned int texture_stone,
 		glBindTexture(GL_TEXTURE_2D, texture_ore);
 		glBufferData(GL_ARRAY_BUFFER,
 		             BLOCKS_IN_CHUNK * sizeof(mat4),
-		             modelMatrices_ore, GL_STATIC_DRAW);
+		             mm->ore, GL_STATIC_DRAW);
 
 		glDrawElementsInstanced(GL_TRIANGLES,
 		                        sizeof(indices) / sizeof(indices[0]),
 		                        GL_UNSIGNED_INT, 0, BLOCKS_IN_CHUNK);
-
-		free(modelMatrices_ore);
-		free(modelMatrices_stone);
 	}
 }
 
@@ -287,7 +286,7 @@ struct notcurses *notcurses_prepare(void)
 {
 	setlocale(LC_ALL, "");
 
-	struct notcurses* nc = notcurses_init(NULL, stdout);
+	struct notcurses *nc = notcurses_init(NULL, stdout);
 
 	return nc;
 }
@@ -359,7 +358,7 @@ void stat_render(struct notcurses* nc, struct ncplane* n, struct time time) {
 		}
 	}
 
-	sprintf(text, "FPS:%d", (int)time.fps);
+	sprintf(text, "FPS:%d\nHello World", (int)time.fps);
 
 	print2menu(child_plane, text);
 

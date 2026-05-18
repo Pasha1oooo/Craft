@@ -16,6 +16,15 @@
 const float GRAVITY = 0.05f;
 const float MAX_VELOCITY = 1.0f;
 
+int is_on_ground(struct chunk *chunks, struct player player)
+{
+	player.position[2] -= 0.2f;
+
+	process_collisions(chunks, &player);
+
+	return player.on_ground;
+}
+
 void init_model_matrices(struct model_matrices *mm)
 {
 	mm->stone = (mat4 *)calloc(BLOCKS_IN_CHUNK, sizeof(mat4));
@@ -27,7 +36,6 @@ void deinit_model_matrices(struct model_matrices *mm)
 	free(mm->stone);
 	free(mm->ore);
 }
-
 
 void process_gravity(struct player *player)
 {
@@ -102,7 +110,7 @@ int main(void)
 		process_gravity(&player);
 		processInput(window, &player, loaded_chunks, &selected_block);
 		process_collisions(loaded_chunks, &player);
-
+		player.on_ground = is_on_ground(loaded_chunks, player);
 
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

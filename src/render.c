@@ -336,7 +336,7 @@ void notcurses_render_ascii(struct notcurses* nc, struct ncplane* n,
 	}
 }
 
-void stat_render(struct notcurses* nc, struct ncplane* n, struct time time) {
+void stat_render(struct notcurses* nc, struct ncplane* n, struct time time, struct player *player) {
 	struct ncplane_options opts = {
 		.y = 0,
 		.x = FB_WIDTH - 100,
@@ -358,7 +358,7 @@ void stat_render(struct notcurses* nc, struct ncplane* n, struct time time) {
 		}
 	}
 
-	sprintf(text, "FPS:%d\nHello World", (int)time.fps);
+	sprintf(text, "FPS:%d\nSCORE:%d\n", (int)time.fps, player->score);
 
 	print2menu(child_plane, text);
 

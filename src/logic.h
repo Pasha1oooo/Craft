@@ -33,6 +33,7 @@ struct player {
 	float jump_force;
 	float rotation_speed;
 	int on_ground;
+	int score;
 };
 
 struct camera create_camera(void);

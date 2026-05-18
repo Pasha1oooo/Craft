@@ -13,6 +13,13 @@
 #include "render.h"
 #include "texture.h"
 
+struct entity{
+	float x;
+	float y;
+	float z;
+	float angle;
+};
+
 const float GRAVITY = 0.05f;
 const float MAX_VELOCITY = 1.0f;
 
@@ -60,7 +67,7 @@ int main(void)
 	unsigned int VBO, VAO, EBO, instanceVBO;
 	unsigned int VBO_highlight, VAO_highlight, EBO_highlight;
 	unsigned int shaderProgram, shaderProgram2;
-	unsigned int texture, texture2, texture3;
+	unsigned int texture, texture2, texture3, texture4;
 	vec3 target;
 	mat4 view = GLM_MAT4_IDENTITY_INIT;
 	struct time time;
@@ -85,6 +92,8 @@ int main(void)
 	prepare_texture(&texture, "a.png");
 	prepare_texture(&texture2, "black.png");
 	prepare_texture(&texture3, "c.png");
+	prepare_texture(&texture4, "black.png");
+	struct entity entity = {10,10,10,0.3};
 
 	shaderProgram = prepare_shaders();
 	shaderProgram2 = prepare_shaders2();
@@ -157,9 +166,61 @@ int main(void)
 		render_chunks(loaded_chunks, &model_matrices,
 		              texture, texture3, VAO);
 
+
 //calculate_fps(&time);
 
 		glm_vec3_copy(player.position, player.head.cameraPos);
+		double lastFrame;
+		double currentFrame = glfwGetTime();
+		double deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+		const float MOB_SPEED = 0.2f;
+		vec3 mobPos = {entity.x, entity.y, entity.z};
+		vec3 dir;
+		glm_vec3_sub(player.position, mobPos, dir);
+		float distance = glm_vec3_norm(dir);
+		if (distance > 0.001f) {
+		    float step = MOB_SPEED * (float)deltaTime;
+		    if (step > distance) step = distance;
+		    entity.x += dir[0] * step;
+		    entity.y += dir[1] * step;
+		    entity.z += dir[2] * step;
+		}
+
+
+		int a = 0;
+		for(int i = 0; i < pow(2 * RENDER_DISTANCE - 1, 3); i++) {
+		    if((int)floor(entity.x / 16.0f) == loaded_chunks[i].pos->x &&
+		       (int)floor(entity.y / 16.0f) == loaded_chunks[i].pos->y &&
+		       (int)floor(entity.z / 16.0f) == loaded_chunks[i].pos->z)
+		        a = 1;
+		}
+		if (a != 0) {
+			glUseProgram(shaderProgram2);
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,"view"),1, GL_FALSE,(float *)view);
+
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,"projection"),1, GL_FALSE,(float *)projection);
+
+			mat4 model_highlight = GLM_MAT4_IDENTITY_INIT;
+
+			glm_translate(model_highlight, (vec3){entity.x,
+			                                     entity.y,
+			                                    entity.z});
+			glm_rotate(model_highlight, entity.angle,(vec3){0,0,1});
+			glm_scale(model_highlight, (vec3){3,3,3});
+
+			glUniformMatrix4fv(glGetUniformLocation(shaderProgram2,
+			                                        "model"),
+			                   1, GL_FALSE,
+			                   (float *)model_highlight);
+
+			glBindVertexArray(VAO_highlight);
+			glBindTexture(GL_TEXTURE_2D, texture4);
+			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+			glUseProgram(shaderProgram);
+		}
+
 
 		int is_block_selected = select_block(player,
 		                                     loaded_chunks,
@@ -217,7 +278,7 @@ int main(void)
 		struct ncplane* n = notcurses_stdplane(nc);
 
 		notcurses_render_ascii(nc, n, frame_buffer, depth_buffer);
-		stat_render(nc, n, time);
+		stat_render(nc, n, time, &player);
 		notcurses_render(nc);
 
 		glfwPollEvents();

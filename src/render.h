@@ -47,6 +47,6 @@ void notcurses_putpixel(struct ncplane *n, unsigned char *pixel_rgba,
 void notcurses_render_ascii(struct notcurses* nc, struct ncplane* n,
                             unsigned char *frame_buffer, float *depth_buffer);
 
-void stat_render(struct notcurses* nc, struct ncplane* n, struct time time);
+void stat_render(struct notcurses* nc, struct ncplane* n, struct time time, struct player *player);
 
 #endif

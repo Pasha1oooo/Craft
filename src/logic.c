@@ -31,7 +31,7 @@ int is_chunk_changed(vec3 player_vec_pos, struct position *prev_chunk)
 	return is_changed;
 }
 
-void break_block(struct position *block_gpos, struct chunk *chunks, struct player *player)
+void break_block(struct position *block_gpos, struct chunk *chunks, struct player **player)
 {
 	struct position chunk_pos = gpos2chunkpos(block_gpos);
 	struct position block_lpos = gpos2lpos(block_gpos);
@@ -44,7 +44,7 @@ void break_block(struct position *block_gpos, struct chunk *chunks, struct playe
 
 		if (is_chunk_selected) {
 			if(chunks[i].chunk_data[block_index] == ORE) {
-				player->score+=1;
+				(*player)->score;
 			}
 			chunks[i].chunk_data[block_index] = AIR;
 			save_chunk(chunks[i].chunk_data,
@@ -89,8 +89,12 @@ void processInput(GLFWwindow * window, struct player *player,
 		                       player->head.cameraDirection[0];
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		player->position[2] += player->speed;
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS &&
+	    player->on_ground) {
+
+		player->velocity[2] += JUMP_FORCE;
+		player->on_ground = 0;
+	}
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 		player->position[2] -= player->speed;
@@ -102,7 +106,7 @@ void processInput(GLFWwindow * window, struct player *player,
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		break_block(selected_block, chunks, player);
+		break_block(selected_block, chunks, &player);
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
 		player->head.pitch += 5.0f;
@@ -149,6 +153,10 @@ void processInput(GLFWwindow * window, struct player *player,
 		player->head.roll-=2;
 		update_camera_direction(&player->head);
 	}
+
+	player->position[0] += player->velocity[0];
+	player->position[1] += player->velocity[1];
+	player->position[2] += player->velocity[2];
 }
 
 void update_camera_direction(struct camera *cam)

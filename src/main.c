@@ -175,7 +175,7 @@ int main(void)
 		double deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		const float MOB_SPEED = 0.05f;
+		const float MOB_SPEED = 0.1f;
 		vec3 mobPos = {entity.x, entity.y, entity.z};
 		vec3 dir;
 		glm_vec3_sub(player.position, mobPos, dir);
@@ -187,7 +187,9 @@ int main(void)
 		    entity.y += dir[1] * step;
 		    entity.z += dir[2] * step;
 		}
-
+		if(abs(player.position[0] - entity.x) < 2.5 && abs(player.position[1] - entity.y) < 2.5 && abs(player.position[2] - entity.z) < 2.5) {
+			return 0;
+		}
 
 		int a = 0;
 		for(int i = 0; i < pow(2 * RENDER_DISTANCE - 1, 3); i++) {

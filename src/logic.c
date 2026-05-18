@@ -31,7 +31,7 @@ int is_chunk_changed(vec3 player_vec_pos, struct position *prev_chunk)
 	return is_changed;
 }
 
-void break_block(struct position *block_gpos, struct chunk *chunks, struct player **player)
+void break_block(struct position *block_gpos, struct chunk *chunks, struct player *player)
 {
 	struct position chunk_pos = gpos2chunkpos(block_gpos);
 	struct position block_lpos = gpos2lpos(block_gpos);
@@ -44,7 +44,8 @@ void break_block(struct position *block_gpos, struct chunk *chunks, struct playe
 
 		if (is_chunk_selected) {
 			if(chunks[i].chunk_data[block_index] == ORE) {
-				(*player)->score;
+				player->score+=1;
+				printf("%d", player->score);
 			}
 			chunks[i].chunk_data[block_index] = AIR;
 			save_chunk(chunks[i].chunk_data,
@@ -106,7 +107,7 @@ void processInput(GLFWwindow * window, struct player *player,
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		break_block(selected_block, chunks, &player);
+		break_block(selected_block, chunks, player);
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
 		player->head.pitch += 5.0f;
@@ -225,6 +226,7 @@ struct player create_player(void)
 	player.speed = 0.2f;
 	player.rotation_speed = 0.2f;
 	player.on_ground = 0;
+	player.score = 0;
 
 	return player;
 }

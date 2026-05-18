@@ -175,7 +175,7 @@ int main(void)
 		double deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		const float MOB_SPEED = 0.2f;
+		const float MOB_SPEED = 0.05f;
 		vec3 mobPos = {entity.x, entity.y, entity.z};
 		vec3 dir;
 		glm_vec3_sub(player.position, mobPos, dir);
